@@ -3,10 +3,14 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <sstream>
 // regex is used to check if a piece of text matches a specific format or rule.
 enum tokenType
 {
-
+    WORD,
+    OPEND_BC,
+    CLOSED_BC,
+    SEMI_COL
 };
 
 typedef struct
@@ -32,6 +36,19 @@ typedef struct
 }   serverConf;
 
 
-void fillServer(std::vector<std::pair<tokenType, std::string>>, int&, std::vector<serverConf>&);
-
-void filllocation(std::vector<std::pair<tokenType, std::string>>, int&, std::vector<locationConf>&);
+class FillServer
+{
+    private:
+        void ListenHandler(std::vector<std::string>);
+        bool str_digit(std::string str);
+        void ServerNmHandler(std::vector<std::string>);
+        void ErrPgHandler(std::vector<std::string>);
+        void BodySzHandler(std::vector<std::string>);
+        std::string Directives[4]; // will store all server directives each one in index
+        void (FillServer::*caller[4])( std::vector<std::string> ); // the array that will store the pointers to functions
+    public:
+        FillServer();
+        serverConf server;
+        void fillServer(std::vector<std::pair<tokenType, std::string>>, int&);
+        ~FillServer();
+};
