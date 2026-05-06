@@ -22,3 +22,6 @@ typedef struct
     size_t max_body_sz;
     std::vector<locationConf> locations;
 }   serverConf;
+
+template <typename T>
+void checkDirectv(/*map, */int position, T toFill);
