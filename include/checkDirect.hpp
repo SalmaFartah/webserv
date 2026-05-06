@@ -2,6 +2,12 @@
 
 #include <string>
 #include <vector>
+#include <map>
+// regex is used to check if a piece of text matches a specific format or rule.
+enum tokenType
+{
+
+};
 
 typedef struct
 {
@@ -12,6 +18,8 @@ typedef struct
     bool autoindex; // on/off
     std::vector<std::string> index; // index index.php index.html;
     std::string upload_store; // path where the client post smth
+    std::string cgi_extension; // script extension: .php/.py/.pl
+    std::string cgi_pass; // the executer that will run the script
 }   locationConf;
 
 typedef struct
@@ -23,5 +31,7 @@ typedef struct
     std::vector<locationConf> locations;
 }   serverConf;
 
-template <typename T>
-void checkDirectv(/*map, */int position, T toFill);
+
+void fillServer(std::vector<std::pair<tokenType, std::string>>, int&, std::vector<serverConf>&);
+
+void filllocation(std::vector<std::pair<tokenType, std::string>>, int&, std::vector<locationConf>&);
