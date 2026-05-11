@@ -74,6 +74,8 @@ void FillLocation::returnHandler( std::vector<std::string> values )
 	location.http_redire = std::make_pair(st_code, url);
 }
 
+
+
 bool valid_path(std::string path)
 {
 	for (size_t i = 0; i < path.size(); i++)
@@ -115,9 +117,22 @@ void FillLocation::autoindexHandler( std::vector<std::string> values)
 
 void FillLocation::indexHandler( std::vector<std::string> values)
 {
+	std::string filename;
 	if (!values.size())
-		throw std::logic_error("Error: autoindex: too many values.");
-	
+		throw std::logic_error("Error: index: missing value.");
+	for (size_t i = 0; i < values.size(); i++)
+		location.index.push_back(values[i]);	
+}
+
+void FillLocation::uploadHandler( std::vector<std::string> values)
+{
+	if (values.size() > 1)
+		throw std::logic_error("Error: upload_store: too many values.");
+	if (!values.size())
+		throw std::logic_error("Error: upload_store: missing value.");
+	if (!valid_path(values[0]))
+		throw std::logic_error("Error: upload_store: invalid path: `" + values[0] + "'");
+	location.upload_store = values[0];
 }
 
 void FillLocation::LocationFiller(std::vector<std::pair<tokenType, std::string> > tokens, size_t& pos)
