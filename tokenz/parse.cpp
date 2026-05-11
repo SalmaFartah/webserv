@@ -3,52 +3,7 @@
 conf::conf() {};
 conf::~conf() {};
 
-// void conf::read_file(std::ifstream& conf)
-// {
-//     std::string line;
-//     std::string word;
-    
-//     while (std::getline(conf, line))
-//     {
-//         size_t i = 0;
-//         while (i < line.size())
-//         {
-//             while (std::isspace(line[i]))
-//                 i++;
-//             if (line[i] == '#')
-//                 break;
-//             if (line[i] == '{')
-//             {
-//                 vecToken.push_back(std::make_pair(OPEND_BC, "{"));
-//                 i++;
-//             }
-//             if (line[i] == '}')
-//             {
-//                 vecToken.push_back(std::make_pair(CLOSED_BC, "}"));
-//                 i++;
-//             }
-//             if (line[i] == ';')
-//             {
-//                 vecToken.push_back(std::make_pair(SEMI_COL, ";"));
-//                 i++;
-//             }
-//             while (line[i] && line[i] != '{' && line[i] != '}' && line[i] != ';' \
-//             && !std::isspace(line[i]) && line[i] != '#')
-//             {
-//                 word.push_back(line[i]);
-//                 i++;
-//             }
-//             if (!word.empty())
-//             {
-//                 std::cout << "word: " << word << '\n';
-//                 vecToken.push_back(std::make_pair(WORD, word));
-//                 word.clear();
-//             }
-//             // i++;
-//         }
-//     }
 
-// }
 void conf::fillWords(std::ifstream& confWords, int c)
 {
     std::string word;
