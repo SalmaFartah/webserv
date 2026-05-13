@@ -1,4 +1,4 @@
-#include "../include/checkDirect.hpp" 
+#include "../include/FillServer.hpp" 
 #include <vector>
 #include <string>
 #include <stdexcept>
@@ -41,7 +41,7 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 				}
 				else if (type == WORD && value == "location")
 				{
-					// path must be non duplicated, starting with /
+					// path must be non duplicated, starting with / and not contain //
 					pos++; // after "location"
 					if (pos >= tokens.size() || tokens[pos].first != WORD)
 						throw std::runtime_error("Expected location path");

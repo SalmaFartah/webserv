@@ -74,18 +74,10 @@ void FillLocation::returnHandler( std::vector<std::string> values )
 	location.http_redire = std::make_pair(st_code, url);
 }
 
-
-
 bool valid_path(std::string path)
 {
-	for (size_t i = 0; i < path.size(); i++)
-	{
-		if ((!isdigit(path[i]) && !isalpha(path[i]) \
-		&& path[i] != '/' && path[i] != '.' \
-		&& path[i] != '_' && path[i] != '-' ) \
-		|| (i == 0 && path[i] != '/'))
-			return false;
-	}
+	if (path.find("/") != 0 || path.find_first_of("//") != path.npos)
+		return false;
 	return true;
 }
 
@@ -121,7 +113,11 @@ void FillLocation::indexHandler( std::vector<std::string> values)
 	if (!values.size())
 		throw std::logic_error("Error: index: missing value.");
 	for (size_t i = 0; i < values.size(); i++)
+	{
+		if (values[i][0] == '/')
+			throw std::logic_error("Error: index: absolute path not accepted: `" + values[i] + "'");
 		location.index.push_back(values[i]);	
+	}
 }
 
 void FillLocation::uploadHandler( std::vector<std::string> values)
@@ -133,6 +129,28 @@ void FillLocation::uploadHandler( std::vector<std::string> values)
 	if (!valid_path(values[0]))
 		throw std::logic_error("Error: upload_store: invalid path: `" + values[0] + "'");
 	location.upload_store = values[0];
+}
+
+void FillLocation::cgiPassHandler(std::vector<std::string> values)
+{
+	if (values.size() > 1)
+		throw std::logic_error("Error: cgi_pass: too many values.");
+	if (!values.size())
+		throw std::logic_error("Error: cgi_pass: missing value.");
+	if (!valid_path(values[0]))
+		throw std::logic_error("Error: cgi_pass: invalid path: `" + values[0] + "'");
+	location.cgi_pass = values[0];
+}
+
+void FillLocation::cgiExtHandler(std::vector<std::string> values)
+{
+	if (values.size() > 1)
+		throw std::logic_error("Error: cgi_extension: too many values.");
+	if (!values.size())
+		throw std::logic_error("Error: cgi_extension: missing value.");
+	std::string ext = values[0];
+	if (ext.find(".") || ext.size() < 2)
+		throw std::logic_error("Error: cgi_extension: invalid extension: `" + ext + "'");
 }
 
 void FillLocation::LocationFiller(std::vector<std::pair<tokenType, std::string> > tokens, size_t& pos)
@@ -160,3 +178,5 @@ void FillLocation::LocationFiller(std::vector<std::pair<tokenType, std::string> 
 	}
 	throw std::logic_error("Error: undefined directive: '" + dierective + "'");
 }
+
+FillLocation::~FillLocation(){}

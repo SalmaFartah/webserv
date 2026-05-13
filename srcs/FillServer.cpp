@@ -1,4 +1,4 @@
-#include "../include/checkDirect.hpp"
+#include "../include/FillServer.hpp"
 
 FillServer::FillServer()
 {
@@ -29,6 +29,26 @@ bool FillServer::valid_ip(std::string vl)
 	return true;
 }
 
+std::string FillServer::resolveHost()
+{
+    struct addrinfo hints;
+	struct addrinfo *res;
+    
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    
+    if (getaddrinfo("localhost", NULL, &hints, &res))
+		throw std::logic_error("");
+
+    char ip[INET_ADDRSTRLEN];
+    struct sockaddr_in* addr = (struct sockaddr_in*)res->ai_addr;// type of ai_addr is sockaddr
+    inet_ntop(AF_INET, &addr->sin_addr, ip, INET_ADDRSTRLEN);
+
+    freeaddrinfo(res);
+    return std::string(ip);
+}
+
 void FillServer::ListenHandler(std::vector<std::string> values)
 {
 	if (values.size() > 1)
@@ -45,6 +65,8 @@ void FillServer::ListenHandler(std::vector<std::string> values)
 	if (posColon == vl.npos) // makinsh colon so ya ima ip bohdha wla port bohdo
 	{
 		// no ':' found jst ip or jst port
+		if (vl == "localhost")
+			vl = resolveHost();
 		if (valid_ip(vl)) // if it is jst ip 127.0.0.1
 			server.listen.push_back(std::make_pair(vl, 80));
 		else if (str_digit(vl) && (port = atoi(vl.c_str())) >= 1 && port <= 65535) // if it is port 8080
@@ -54,11 +76,12 @@ void FillServer::ListenHandler(std::vector<std::string> values)
 	}
 	else if (posColon != 0 && posColon != vl.size() - 1)
 	{
-
 		// std::cout << "pos: " << posColon << " size: " << vl.size() << "\n";
 		std::string ip = vl.substr(0, posColon);
 		std::string portstr = vl.substr(posColon + 1, vl.size() - posColon);
 
+		if (ip == "localhost")
+			ip = resolveHost();
 		if (!valid_ip(ip))
 			throw std::logic_error("Error: listen: invalid IP address.");
 		if (!str_digit(portstr))
