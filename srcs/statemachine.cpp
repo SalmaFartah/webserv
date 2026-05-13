@@ -71,7 +71,7 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 				}
 				else if (type == WORD)
 				{
-					// sould call the fillLocation form taskC.					
+					// sould call the fillLocation form taskC.
 				}
 				else
 					throw std::runtime_error("Unexpected token in location block"); // can be {

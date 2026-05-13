@@ -10,15 +10,8 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include "../tokenz/parse.hpp"
-#include "Fill.hpp"
 
-typedef struct
-{
-    std::vector<std::pair<std::string, int> > listen; // default localhost:80
-    std::map<int, std::string> error_page;
-    size_t body_size;
-    std::vector<locationConf> locations;
-}   serverConf;
+enum state { LOCATION, SERVER };
 
 typedef struct
 {
@@ -29,20 +22,34 @@ typedef struct
     bool autoindex; // on/off
     std::vector<std::string> index; // index index.php index.html;
     std::string upload_store; // path where the client post smth
+	std::map<int, std::string> error_page;
+    size_t body_size;
     std::string cgi_extension; // script extension: .php/.py/.pl
     std::string cgi_pass; // the executer that will run the script
 }   locationConf;
 
+typedef struct
+{
+    std::vector<std::pair<std::string, int> > listen; // default localhost:80
+    std::map<int, std::string> error_page;
+    size_t body_size;
+	std::string root; // path where exist ure site's files
+    bool autoindex; // on/off
+    std::vector<std::string> index; // index index.php index.html;
+    std::vector<locationConf> locations;
+}   serverConf;
+
 class Fill
 {
-	private:
+	protected:
 		bool str_digit(std::string str);
 		bool valid_path(std::string path);
-		void rootHandler( std::vector<std::string> );
-		void autoindexHandler( std::vector<std::string> );
-		void indexHandler( std::vector<std::string> );
-		void ErrPgHandler(std::vector<std::string>);
-        void BodySzHandler(std::vector<std::string>);
+		void rootHandler( std::vector<std::string>, state);
+		void autoindexHandler( std::vector<std::string>, state);
+		void indexHandler( std::vector<std::string>, state);
+		void ErrPgHandler(std::vector<std::string>, state);
+        void BodySzHandler(std::vector<std::string>, state);
+		bool valid_suffix(char c);
 	public:
 		Fill();
 	    serverConf server;
@@ -50,10 +57,3 @@ class Fill
 		~Fill();
 };
 
-Fill::Fill()
-{
-}
-
-Fill::~Fill()
-{
-}

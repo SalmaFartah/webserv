@@ -5,10 +5,16 @@ FillServer::FillServer()
 	Directives[0] = "listen";
 	Directives[1] = "error_page";
 	Directives[2] = "client_max_body_size";
+	Directives[3] = "index";
+	Directives[4] = "autoindex";
+	Directives[5] = "root";
 
 	caller[0] = &FillServer::ListenHandler;
 	caller[1] = &FillServer::ErrPgHandler;
 	caller[2] = &FillServer::BodySzHandler;
+	caller[3] = &FillServer::indexHandler;
+	caller[4] = &FillServer::autoindexHandler;
+	caller[5] = &FillServer::rootHandler;
 }
 
 bool FillServer::valid_ip(std::string vl)
@@ -21,7 +27,9 @@ bool FillServer::valid_ip(std::string vl)
 	int cnt;
 	for (cnt = 0; std::getline(ip, segment, '.'); cnt++)
 	{
-		if (!str_digit(segment) || atoi(segment.c_str()) < 0 || atoi(segment.c_str()) > 255)
+		int seg = atoi(segment.c_str());
+		if (segment.size() > 3 || !str_digit(segment) || seg < 0 || seg > 255 \
+		|| (seg != 0 && segment[0] == '0') || (seg == 0 && segment.size() > 1)) // leading 0
 			break;
 	}
 	if (cnt != 4)
@@ -49,7 +57,7 @@ std::string FillServer::resolveHost()
     return std::string(ip);
 }
 
-void FillServer::ListenHandler(std::vector<std::string> values)
+void FillServer::ListenHandler(std::vector<std::string> values, state)
 {
 	if (values.size() > 1)
 		throw std::logic_error("Error: listen: too many values.");
@@ -83,7 +91,7 @@ void FillServer::ListenHandler(std::vector<std::string> values)
 		if (ip == "localhost")
 			ip = resolveHost();
 		if (!valid_ip(ip))
-			throw std::logic_error("Error: listen: invalid IP address.");
+			throw std::logic_error("Error: listen: invalid IP address: `" + ip + "'");
 		if (!str_digit(portstr))
 			throw std::logic_error("Error: listen: invalid port.");
 		port = atoi(portstr.c_str());
@@ -92,79 +100,6 @@ void FillServer::ListenHandler(std::vector<std::string> values)
 
 		server.listen.push_back(std::make_pair(ip, port));
 	}		
-}
-
-void FillServer::ErrPgHandler(std::vector<std::string> values)
-{
-	if (!values.size())
-		throw std::logic_error("Error: error_page: missing error code");
-	
-	std::string path = values.back();
-	int err_code;
-	size_t i = 0;
-	for (; i < values.size() - 1; i++)
-	{
-		err_code = atoi(values[i].c_str());
-		if (!str_digit(values[i]) || (err_code != 400 \
-		&& err_code != 403 && err_code != 404 && err_code != 405 \
-		&& err_code != 413 && err_code != 500 && err_code != 501))
-		{
-			server.error_page.clear();
-			throw std::logic_error("Error: error_page: invalid error code: `" + values[i] + "'");
-		}
-		server.error_page[err_code] = path;
-	}
-	if (str_digit(path))
-		throw std::logic_error("Error: error_page: missing file path");
-	else if (!i)
-		throw std::logic_error("Error: error_page: missing error code");
-	if (!valid_path(path))
-		throw std::logic_error("Error: error_page: invalid path");
-}
-bool valid_suffix(char c)
-{
-	if (!c || c == 'k' || c == 'K' || c == 'g' || c == 'G' || c == 'm' || c == 'M')
-		return true;
-	return false;	
-}
-
-void FillServer::BodySzHandler(std::vector<std::string> values)
-{
-	if (values.size() > 1)
-		throw std::logic_error("Error: client_max_body_size: too many values.");
-	if (values.size() < 1)
-		throw std::logic_error("Error: client_max_body_size: missing value.");
-
-	std::string val = values[0];
-	char *end = NULL;
-	server.body_size = std::strtoull(val.c_str(), &end, 10);
-
-	if (val[0] == '-' || errno == ERANGE || !valid_suffix(*end) \
-	|| (!server.body_size && end == val.c_str()) || end[1])
-		throw std::logic_error("Error: client_max_body_size: invalid value: `" + val + "'");
-	size_t max = std::numeric_limits<size_t>::max();
-	switch (*end)
-	{
-		case 'k':
-		case 'K':
-			if (server.body_size > max / 1024)
-				throw std::logic_error("Error: client_max_body_size: too a large value.");
-			server.body_size *= 1024;
-			break;
-		case 'm':
-		case 'M':
-			if (server.body_size > max / std::pow(1024, 2))
-				throw std::logic_error("Error: client_max_body_size: too a large value.");
-			server.body_size *= std::pow(1024, 2);
-			break;
-		case 'g':
-		case 'G':
-			if (server.body_size > max / std::pow(1024, 3))
-				throw std::logic_error("Error: client_max_body_size: too a large value.");
-			server.body_size *= std::pow(1024, 3);
-		default:
-			break;
-	}
 }
 
 void FillServer::fillServer(std::vector<std::pair<tokenType, std::string> > tokens, size_t& pos)
@@ -181,11 +116,11 @@ void FillServer::fillServer(std::vector<std::pair<tokenType, std::string> > toke
 	if (tokens[pos].first != SEMI_COL)
 		throw std::logic_error("Error: invalid syntax: expected ';' after directive value. ");
 	pos++;
-	for (size_t i = 0; i < 4; i++)
+	for (size_t i = 0; i < 6; i++)
 	{
 		if (dierective == Directives[i])
 		{
-			(this->*caller[i])(values);
+			(this->*caller[i])(values, SERVER);
 			return ;
 		}
 	}

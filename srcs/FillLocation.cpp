@@ -10,6 +10,8 @@ FillLocation::FillLocation()
 	Directives[5] = "upload_store";
 	Directives[6] = "cgi_pass";
 	Directives[7] = "cgi_extension";
+	Directives[8] = "client_max_body_size";
+	Directives[9] = "error_page";
 
 	caller[0] = &FillLocation::methodsHandler;
 	caller[1] = &FillLocation::returnHandler;
@@ -19,9 +21,11 @@ FillLocation::FillLocation()
 	caller[5] = &FillLocation::uploadHandler;
 	caller[6] = &FillLocation::cgiPassHandler;
 	caller[7] = &FillLocation::cgiExtHandler;
+	caller[8] = &FillLocation::BodySzHandler;
+	caller[9] = &FillLocation::ErrPgHandler;
 }
 
-void FillLocation::methodsHandler( std::vector<std::string> values)
+void FillLocation::methodsHandler( std::vector<std::string> values, state)
 {
 	if (!values.size())
 		throw std::logic_error("Error: allowed_methods: missing value.");
@@ -37,21 +41,11 @@ void FillLocation::methodsHandler( std::vector<std::string> values)
 		else
 			throw std::logic_error("Error: allowed_methods: invalid method: `" + values[i] + "'");
 		if (!result.second)
-			throw std::logic_error("Error: allowed_methods: duplicate method.");
+			throw std::logic_error("Error: allowed_methods: duplicate method: `" + values[i] + "'");
 	}
 }
 
-bool str_digit(std::string str)
-{
-	for (size_t i = 0; i < str.size(); i++)
-	{
-		if (!isdigit(str[i]))
-			return false;
-	}
-	return true;
-}
-
-void FillLocation::returnHandler( std::vector<std::string> values )
+void FillLocation::returnHandler( std::vector<std::string> values, state )
 {
 	if (values.size() > 2)
 		throw std::logic_error("Error: return: too many values.");
@@ -64,7 +58,7 @@ void FillLocation::returnHandler( std::vector<std::string> values )
 
 	char *end = NULL;
 	int st_code = std::strtol(status_code.c_str(), &end, 10);
-	if (errno == ERANGE || (st_code != 301 && st_code != 302 \
+	if (status_code[0] == '0' || errno == ERANGE || (st_code != 301 && st_code != 302 \
 	&& st_code != 303 && st_code != 307 && st_code != 308))
 		throw std::logic_error("Error: return: invalid status code: `" + status_code + "'");
 
@@ -74,53 +68,7 @@ void FillLocation::returnHandler( std::vector<std::string> values )
 	location.http_redire = std::make_pair(st_code, url);
 }
 
-bool valid_path(std::string path)
-{
-	if (path.find("/") != 0 || path.find_first_of("//") != path.npos)
-		return false;
-	return true;
-}
-
-void FillLocation::rootHandler( std::vector<std::string> values)
-{
-	if (values.size() > 1)
-		throw std::logic_error("Error: root: too many values.");
-	if (!values.size())
-		throw std::logic_error("Error: root: missing value.");
-	std::string path = values[0];
-	if (!valid_path(path))
-		throw std::logic_error("Error: root: invalid path: `" + path + "'");
-	location.root = path;
-}
-
-void FillLocation::autoindexHandler( std::vector<std::string> values)
-{
-	if (values.size() > 1)
-		throw std::logic_error("Error: autoindex: too many values.");
-	if (!values.size())
-		throw std::logic_error("Error: autoindex: missing value.");
-	if (values[0] == "on")
-		location.autoindex = true;	
-	else if (values[0] == "off")
-		location.autoindex = false;
-	else
-		throw std::logic_error("Error: autoindex: invalid value: `" + values[0] + "'");
-}
-
-void FillLocation::indexHandler( std::vector<std::string> values)
-{
-	std::string filename;
-	if (!values.size())
-		throw std::logic_error("Error: index: missing value.");
-	for (size_t i = 0; i < values.size(); i++)
-	{
-		if (values[i][0] == '/')
-			throw std::logic_error("Error: index: absolute path not accepted: `" + values[i] + "'");
-		location.index.push_back(values[i]);	
-	}
-}
-
-void FillLocation::uploadHandler( std::vector<std::string> values)
+void FillLocation::uploadHandler( std::vector<std::string> values, state)
 {
 	if (values.size() > 1)
 		throw std::logic_error("Error: upload_store: too many values.");
@@ -131,7 +79,7 @@ void FillLocation::uploadHandler( std::vector<std::string> values)
 	location.upload_store = values[0];
 }
 
-void FillLocation::cgiPassHandler(std::vector<std::string> values)
+void FillLocation::cgiPassHandler(std::vector<std::string> values, state)
 {
 	if (values.size() > 1)
 		throw std::logic_error("Error: cgi_pass: too many values.");
@@ -142,7 +90,7 @@ void FillLocation::cgiPassHandler(std::vector<std::string> values)
 	location.cgi_pass = values[0];
 }
 
-void FillLocation::cgiExtHandler(std::vector<std::string> values)
+void FillLocation::cgiExtHandler(std::vector<std::string> values, state)
 {
 	if (values.size() > 1)
 		throw std::logic_error("Error: cgi_extension: too many values.");
@@ -168,15 +116,15 @@ void FillLocation::LocationFiller(std::vector<std::pair<tokenType, std::string> 
 	if (tokens[pos].first != SEMI_COL)
 		throw std::logic_error("Error: invalid syntax: expected ';' after directive value.");
 	pos++;
-	for (size_t i = 0; i < 8; i++)
+	for (size_t i = 0; i < 10; i++)
 	{
 		if (dierective == Directives[i])
 		{
-			(this->*caller[i])(values);
+			(this->*caller[i])(values, LOCATION);
 			return ;
 		}
 	}
-	throw std::logic_error("Error: undefined directive: '" + dierective + "'");
+	throw std::logic_error("Error: undefined directive: `" + dierective + "'");
 }
 
 FillLocation::~FillLocation(){}
