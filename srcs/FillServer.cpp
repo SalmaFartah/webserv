@@ -102,6 +102,18 @@ void FillServer::ListenHandler(std::vector<std::string> values, state)
 	}		
 }
 
+bool FillServer::directive(std::string str)
+{
+	if (str == "location")
+		return true;
+	for (size_t i = 0; i < 6; i++)
+	{
+		if (str == Directives[i])
+			return true;
+	}
+	return false;
+}
+
 void FillServer::fillServer(std::vector<std::pair<tokenType, std::string> > tokens, size_t& pos)
 {
 	if (pos == tokens.size())
@@ -111,7 +123,7 @@ void FillServer::fillServer(std::vector<std::pair<tokenType, std::string> > toke
 	std::string dierective = tokens[pos].second;
 
 	pos++;
-	for (; pos < tokens.size() && tokens[pos].first != SEMI_COL ; pos++)
+	for (; pos < tokens.size() && tokens[pos].first == WORD && !directive(tokens[pos].second) ; pos++)
 		values.push_back(tokens[pos].second);
 	if (tokens[pos].first != SEMI_COL)
 		throw std::logic_error("Error: invalid syntax: expected ';' after directive value. ");

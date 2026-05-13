@@ -7,6 +7,7 @@ class FillLocation : public Fill
         std::string Directives[10]; // will store all server directives each one in index
         void (FillLocation::*caller[10])( std::vector<std::string>, state); // the array that will store the pointers to functions
 
+        bool directive(std::string);
         void methodsHandler( std::vector<std::string>, state);
         void returnHandler( std::vector<std::string>, state);
         void uploadHandler( std::vector<std::string>, state);

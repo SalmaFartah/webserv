@@ -101,6 +101,18 @@ void FillLocation::cgiExtHandler(std::vector<std::string> values, state)
 		throw std::logic_error("Error: cgi_extension: invalid extension: `" + ext + "'");
 }
 
+bool FillLocation::directive(std::string str)
+{
+	if (str == "location")
+		return true;
+	for (size_t i = 0; i < 10; i++)
+	{
+		if (str == Directives[i])
+			return true;
+	}
+	return false;
+}
+
 void FillLocation::LocationFiller(std::vector<std::pair<tokenType, std::string> > tokens, size_t& pos)
 {
 	if (pos == tokens.size())
@@ -110,8 +122,11 @@ void FillLocation::LocationFiller(std::vector<std::pair<tokenType, std::string> 
 	std::string dierective = tokens[pos].second;
 
 	pos++;
-	for (; pos < tokens.size() && tokens[pos].first != SEMI_COL ; pos++)
+	while (pos < tokens.size() && tokens[pos].first == WORD && !directive(tokens[pos].second))
+	{
 		values.push_back(tokens[pos].second);
+		pos++;
+	}
 
 	if (tokens[pos].first != SEMI_COL)
 		throw std::logic_error("Error: invalid syntax: expected ';' after directive value.");

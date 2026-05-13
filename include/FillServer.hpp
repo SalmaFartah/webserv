@@ -10,6 +10,7 @@ class FillServer : public Fill
         void ListenHandler(std::vector<std::string>, state);
         bool valid_ip(std::string);
         std::string resolveHost();
+        bool directive(std::string);
     public:
         FillServer();
         void fillServer(std::vector<std::pair<tokenType, std::string> >, size_t&);

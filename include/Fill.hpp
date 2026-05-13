@@ -28,7 +28,7 @@ typedef struct
     std::string cgi_pass; // the executer that will run the script
 }   locationConf;
 
-typedef struct
+typedef struct serverConf
 {
     std::vector<std::pair<std::string, int> > listen; // default localhost:80
     std::map<int, std::string> error_page;
@@ -36,6 +36,10 @@ typedef struct
 	std::string root; // path where exist ure site's files
     bool autoindex; // on/off
     std::vector<std::string> index; // index index.php index.html;
+    serverConf()
+    {
+        listen.push_bach(std::make_pair("0.0.0.0", 80));
+    };
     std::vector<locationConf> locations;
 }   serverConf;
 
