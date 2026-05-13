@@ -2,6 +2,7 @@
 
 FillLocation::FillLocation()
 {
+	location.defaultm = true;
 	Directives[0] = "allowed_method";
 	Directives[1] = "return";
 	Directives[2] = "root";
@@ -27,6 +28,11 @@ FillLocation::FillLocation()
 
 void FillLocation::methodsHandler( std::vector<std::string> values, state)
 {
+	if (location.defaultm)
+	{
+		location.methods.clear();
+		location.defaultm = false;
+	}
 	if (!values.size())
 		throw std::logic_error("Error: allowed_methods: missing value.");
 	std::pair<std::set<std::string>::iterator, bool> result;

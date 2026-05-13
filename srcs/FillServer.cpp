@@ -2,6 +2,8 @@
 
 FillServer::FillServer()
 {
+	server.defaults = true;
+	server.defaulti = true;
 	Directives[0] = "listen";
 	Directives[1] = "error_page";
 	Directives[2] = "client_max_body_size";
@@ -59,6 +61,11 @@ std::string FillServer::resolveHost()
 
 void FillServer::ListenHandler(std::vector<std::string> values, state)
 {
+	if (server.defaults)
+	{
+		server.listen.clear();
+		server.defaults = false; 
+	}
 	if (values.size() > 1)
 		throw std::logic_error("Error: listen: too many values.");
 	if (values.size() < 1)

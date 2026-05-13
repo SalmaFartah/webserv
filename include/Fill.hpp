@@ -13,7 +13,7 @@
 
 enum state { LOCATION, SERVER };
 
-typedef struct
+typedef struct locationConf
 {
     std::string path; // location /path/
     std::set<std::string> methods;// POST/GET/DELETE
@@ -26,6 +26,13 @@ typedef struct
     size_t body_size;
     std::string cgi_extension; // script extension: .php/.py/.pl
     std::string cgi_pass; // the executer that will run the script
+    bool defaultm;
+    locationConf()
+    {
+        methods.insert("GET");
+        methods.insert("POST");
+        methods.insert("DELETE");
+    };
 }   locationConf;
 
 typedef struct serverConf
@@ -36,11 +43,17 @@ typedef struct serverConf
 	std::string root; // path where exist ure site's files
     bool autoindex; // on/off
     std::vector<std::string> index; // index index.php index.html;
+    std::vector<locationConf> locations;
+    bool defaults;
+    bool defaulti;
     serverConf()
     {
-        listen.push_bach(std::make_pair("0.0.0.0", 80));
+        body_size = 1048576;
+        listen.push_back(std::make_pair("0.0.0.0", 80));
+        index.push_back("index.html");
+        // err_page[400] 
+        autoindex = false;
     };
-    std::vector<locationConf> locations;
 }   serverConf;
 
 class Fill

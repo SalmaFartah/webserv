@@ -58,6 +58,11 @@ void Fill::autoindexHandler( std::vector<std::string> values, state type)
 
 void Fill::indexHandler( std::vector<std::string> values, state type)
 {
+	if (server.defaulti)
+	{
+		server.index.clear();
+		server.defaulti = false;
+	}
 	std::string filename;
 	if (!values.size())
 		throw std::logic_error("Error: index: missing value.");
