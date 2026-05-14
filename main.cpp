@@ -16,8 +16,13 @@ int main()
 	// tokens.push_back(std::make_pair(SEMI_COL, ";"));
 	locationTokens.push_back(std::make_pair(WORD, "allowed_method"));
 	locationTokens.push_back(std::make_pair(WORD, "GET"));
+	// locationTokens.push_back(std::make_pair(WORD, "POST"));
+	locationTokens.push_back(std::make_pair(SEMI_COL, ";"));
+	locationTokens.push_back(std::make_pair(WORD, "allowed_method"));
+	// locationTokens.push_back(std::make_pair(WORD, "GET"));
 	locationTokens.push_back(std::make_pair(WORD, "POST"));
 	locationTokens.push_back(std::make_pair(SEMI_COL, ";"));
+
 
 	locationTokens.push_back(std::make_pair(WORD, "return"));
 	locationTokens.push_back(std::make_pair(WORD, "302"));
@@ -71,6 +76,8 @@ int main()
 		}
 	}
 
+    for (std::set<std::string>::iterator it = loc.location.methods.begin(); it != loc.location.methods.end(); ++it)
+        std::cout << *it << "\n";
 
 	// FillServer fil;
 	// for (size_t pos = 0; pos < tokens.size(); )

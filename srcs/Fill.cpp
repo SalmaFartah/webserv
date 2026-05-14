@@ -134,7 +134,6 @@ void Fill::ErrPgHandler(std::vector<std::string> values, state type)
 		throw std::logic_error("Error: error_page: missing error code");
 	
 	std::string path = values.back();
-	std::map<int, std::string> value;
 	int err_code;
 	size_t i = 0;
 	for (; i < values.size() - 1; i++)
@@ -143,11 +142,12 @@ void Fill::ErrPgHandler(std::vector<std::string> values, state type)
 		if (values[i].size() != 3 || values[i][0] == '0' || !str_digit(values[i]) || (err_code != 400 \
 		&& err_code != 403 && err_code != 404 && err_code != 405 \
 		&& err_code != 413 && err_code != 500 && err_code != 501))
-		{
-			value.clear();
 			throw std::logic_error("Error: error_page: invalid error code: `" + values[i] + "'");
-		}
-		value[err_code] = path;
+
+		if (type == SERVER)
+			server.error_page[err_code] = path;
+		else
+			location.error_page[err_code] = path;
 	}
 	if (str_digit(path))
 		throw std::logic_error("Error: error_page: missing file path");
@@ -155,16 +155,8 @@ void Fill::ErrPgHandler(std::vector<std::string> values, state type)
 		throw std::logic_error("Error: error_page: missing error code");
 	if (!valid_path(path))
 		throw std::logic_error("Error: error_page: invalid path");
-	if (type == SERVER)
-		server.error_page = value;
-	else
-		location.error_page = value;
 }
 
-Fill::Fill()
-{
-}
+Fill::Fill(){}
 
-Fill::~Fill()
-{
-}
+Fill::~Fill(){}
