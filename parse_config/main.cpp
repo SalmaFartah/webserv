@@ -1,5 +1,5 @@
-#include "include/FillServer.hpp"
-#include "include/FillLocation.hpp"
+#include "parse_conf/inc/FillServer.hpp"
+#include "parse_conf/inc/FillLocation.hpp"
 
 int main()
 {
