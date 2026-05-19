@@ -69,9 +69,8 @@ int main(int ac, char *av[])
 	fds.events = POLLIN;
 	vecFds.push_back(fds);
 
-	// std::vector<std::string> wrifiles;
+	std::vector<std::string> clieFiles;
 	// int nfds = 1; // this second param of poll, its like how many slots of your array to read, starting from index 0, to know exactly when to stop scanning memory, without loosing cpu for all fds only the active ones
-
 	// fds[0].fd = servsock; // assign the server socket to fds[0] and waiting for a connection
 	// fds[0].events = POLLIN; // if someone knock the door(there is a data to read) watchout
 
@@ -101,39 +100,58 @@ int main(int ac, char *av[])
 				vecFds.back().events = POLLIN;
 				// inite the revents of master to 0
 				vecFds[0].revents = 0;
+				// new client file
+				clieFiles.push_back(""); // 1
 			}
 			else if (vecFds[i].revents & POLLIN) // a client want to do smth
 			{
 				// handle this data on existing client
 				// printf("IN READ...\n");
-				char buffer[1024];
+				char buffer[4096];
 				ssize_t reading = read(vecFds[i].fd, buffer, sizeof(buffer) - 1); // our read is non blocking io mean if our kernel buffer is empty read will not frozen here and wait
 				if (reading > 0)
 				{
-					// wrifiles[i] += buffer;
 					buffer[reading] = '\0';
-					printf("server read from client [%d]: %s", vecFds[i].fd, buffer);
+					clieFiles[i - 1] += buffer;
+					// if find /r/n/r/n truncate string from beg to the pos of /r/n/r/n call parser req /--/
+					size_t endofhead = clieFiles[i - 1].find("\r\n\r\n");
+					if (endofhead != std::string::npos)
+					{
+						std::string toParse = clieFiles[i - 1].substr(0, endofhead + 2);
+						// call parser function and check if there is a return and flage, to read the x body or just read the chunked until 0/r/n/r/n
+						// int endofBody = parser(clieFiles[i - 1]);
+
+						//  check first if the endofBody is match the size of a string or bigger
+							//  clieFiles[i - 1][endofhead] ---> clieFiles[i - 1][endofBody]
+
+						// if (body && endofBody)
+						// {
+							// setAflag to true in this case;
+
+						// }
+
+					}
+					
+					std::cout << "server read from client " << vecFds[i].fd << ": " << buffer << std::endl;
 				}
 				else if (reading == 0) // connection closed cleanly by the client (TCP FIN)
 				{
 					std::cout << "client: " << vecFds[i].fd << " disconnected" << '\n';
+					std::cout << "my clients files:  " << clieFiles[i - 1] << std::endl;
 					close(vecFds[i].fd);
-					vecFds.erase(vecFds.begin() + i); // vector element = 4 so size 5; we are in element 2; remove element 2 from vector; so size will decrement to 4 and elements became 3 
+					vecFds.erase(vecFds.begin() + i);
+					clieFiles.erase(clieFiles.begin() + i - 1); // 
 					i--;
 				}
-				
 			}
 		}
-		
-
-		// if (bytes_read > 0) 
-		// {
-		// 	printf("[SERVER] Client A sent: %s", buffer);
-		// 	// Send a quick thank you message back to Client A
-		// 	write(cli_sock, "Message received!\n", 18);
-		// }
 	}
+	// for (size_t i = 0; i < clieFiles.size(); i++)
+	// {
+	// 	std::cout << "my clients files:  " << clieFiles[i] << std::endl; // 0
 
+	// }
+	
 
 
 
