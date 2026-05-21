@@ -3,14 +3,14 @@ Host: localhost:8080\r\n
 Content-Type: text/plain\r\n
 Content-Length: 180\r\n
 \r\n
-ContentContentContentContentContentContentContentContentContentContentContentContentContent|ContentContent
-ContentContentContentContentContentContentContentContentContentContentContentContentContentContentContent
-ContentContentContentContentContentContentContentContentContentContentContentC|ontentContentContentContent
-ContentContentContentContentContentContentContentContentContentContentContentContentContentContentContent
-ContentContentContentContentContentContentContentContentContentContent
+ContentContentContentC
 
 
-
+GET /upload HTTP/1.1\r\n
+Host: localhost:8080\r\n
+Content-Type: text/plain\r\n
+Content-Length: 180\r\n
+\r\n
 
 POST /upload HTTP/1.1\r\n
 Host: localhost:8080\r\n
@@ -32,3 +32,17 @@ Content-Type: text/plain\r\n
 Content-Length: 28\r\n
 \r\n
 ContentContentContentContent
+
+
+
+POST /upload HTTP/1.1\r\n
+Host: localhost:8080\r\n
+Transfer-Encoding: chunked\r\n
+Trailer: X-Post-Header\r\n
+\r\n
+5\r\n
+hello\r\n
+0\r\n
+X-Post-Header: verified\r\n
+\r\n
+

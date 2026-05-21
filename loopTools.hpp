@@ -21,8 +21,8 @@
 struct myclients
 {
     std::string clieFile;
-    std::string tmpRead;
     size_t head_end;
+    bool ishead;
 };
 
 class loopTools

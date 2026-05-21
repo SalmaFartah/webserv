@@ -71,30 +71,28 @@ void loopTools::newConnection()
 }
 void loopTools::handleRequest(int i)
 {
-	infoClie[i].head_end = infoClie[i].tmpRead.find("\r\n\r\n");
-	// if (endofhead != std::string::npos)
-	// 		infoClie[i].endofHead = true; // i should turn it false when the request finish
-	if (infoClie[i].head_end)
+	infoClie[i].head_end = infoClie[i].clieFile.find("\r\n\r\n");
+	if (infoClie[i].head_end != std::string::npos)
+			infoClie[i].ishead = true; // i should turn it false when the request finish
+	if (infoClie[i].ishead)
 	{
-			std::string toParse = infoClie[i].clieFile.substr(0, infoClie[i].head_end + 2);
-			/*SEND Toparse (header) to parser pers*/
-			/*------------------------------------*/
-			/*GET Return of the content length if exist*/
-			int len = 92; // len = get_len() HERE it should be the function from parser that return the len of content 
-			int bodyCheck = infoClie[i].clieFile.size() - infoClie[i].head_end;
-
-			if (ctlen && len > 0 && abs(bodyCheck) >= len)
+		std::string toParse = infoClie[i].clieFile.substr(0, infoClie[i].head_end + 2);
+		/*SEND Toparse (header) to parser pers*/
+		/*------------------------------------*/
+		/*GET Return of the content length if exist*/
+		int len = 180; // len = get_len() HERE it should be the function from parser that return the len of content 
+		int bodyCheck = infoClie[i].clieFile.size() - infoClie[i].head_end;
+		if (/*content-length &&*/ abs(bodyCheck) >= len /*|| Transfer-Encoding: chunked*/ )
+		{
+			std::string body = infoClie[i].clieFile.substr(infoClie[i].head_end + 4, infoClie[i].head_end + 4 + len); // took body
+			if (abs(bodyCheck) > len /* && keep_alive*/)
 			{
-				std::string body = infoClie[i].clieFile.substr(infoClie[i].head_end + 4, infoClie[i].head_end + 4 + len); // took body
-
-				
-				if (abs(bodyCheck) > len)
-				{
-					
-				}
+				// take the next request override the first one
+				infoClie[i].clieFile = infoClie[i].clieFile.substr(infoClie[i].head_end + 4 + len);
+				// loop or recursion
 			}
-			
-		infoClie[i].head_end = -1;
+			infoClie[i].ishead = false;
+		}
 	}
 }
 void loopTools::existClient(int i)
@@ -106,37 +104,10 @@ void loopTools::existClient(int i)
 	{
 		buffer[reading] = '\0';
 		
-		infoClie[i - 1].tmpRead = buffer; 
-
 		infoClie[i - 1].clieFile += buffer; // this one accumulate buffer
 
 		handleRequest(i - 1);
-        // size_t endofhead = infoClie[i - 1].tmpRead.find("\r\n\r\n");
-		 
-		// if (endofhead != std::string::npos)
-			// infoClie[i - 1].endofHead = true; // i should turn it false when the request finish
-	
-		// if (infoClie[i - 1].endofHead)
-		// {
-		// 	std::string toParse = infoClie[i - 1].clieFile.substr(0, endofhead + 2);
-		// 	/*SEND Toparse (header) to parser pers*/
-		// 	/*------------------------------------*/
-		// 	/*GET Return of the content length if exist*/
-		// 	int len = 92; // len = get_len() HERE it should be the function from parser that return the len of content 
-		// 	int bodyCheck = infoClie[i - 1].clieFile.size() - endofhead;
 
-		// 	if (ctlen && len > 0 && abs(bodyCheck) >= len)
-		// 	{
-		// 		std::string body = infoClie[i - 1].clieFile.substr(endofhead + 4, endofhead + 4 + len); // took body
-		// 		if (abs(bodyCheck) > len)
-		// 		{
-					
-		// 		}
-		// 	}
-			
-		// 		infoClie[i - 1].endofHead = false;
-
-		// }
         //check first if the Content-Length is match the size of a string or bigger
 							//  allCli.clieFiles[i - 1][endofhead] ---> allCli.clieFiles[i - 1][Content-Length]
         std::cout << "server read from client " << vecFds[i].fd << ": " << buffer << std::endl;
