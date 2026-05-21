@@ -8,20 +8,30 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <poll.h>
+#include <stdbool.h>
 
+#define BUFFER_SZ 200
 
 // struct myclients
 // {
-//     std::vector<std::string> clieFiles;
+//     std::string clieFile;
 //     std::string tmpRead;
+//     int offset;
 // };
+struct myclients
+{
+    std::string clieFile;
+    std::string tmpRead;
+    size_t head_end;
+};
 
 class loopTools
 {
     private:
-        // myclients allCli;
+        std::vector<struct myclients> infoClie;
         int servsock;
         std::vector<struct pollfd> vecFds;
+        bool ctlen;
     public:
         loopTools();
         // void inite_server();
@@ -29,6 +39,7 @@ class loopTools
         void mainLoop();
         void newConnection();
         void existClient(int i);
+        void handleRequest(int i);
         ~loopTools();
 };
 

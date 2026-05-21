@@ -69,31 +69,86 @@ void loopTools::newConnection()
 	vecFds[0].revents = 0;
 	
 }
+void loopTools::handleRequest(int i)
+{
+	infoClie[i].head_end = infoClie[i].tmpRead.find("\r\n\r\n");
+	// if (endofhead != std::string::npos)
+	// 		infoClie[i].endofHead = true; // i should turn it false when the request finish
+	if (infoClie[i].head_end)
+	{
+			std::string toParse = infoClie[i].clieFile.substr(0, infoClie[i].head_end + 2);
+			/*SEND Toparse (header) to parser pers*/
+			/*------------------------------------*/
+			/*GET Return of the content length if exist*/
+			int len = 92; // len = get_len() HERE it should be the function from parser that return the len of content 
+			int bodyCheck = infoClie[i].clieFile.size() - infoClie[i].head_end;
 
+			if (ctlen && len > 0 && abs(bodyCheck) >= len)
+			{
+				std::string body = infoClie[i].clieFile.substr(infoClie[i].head_end + 4, infoClie[i].head_end + 4 + len); // took body
+
+				
+				if (abs(bodyCheck) > len)
+				{
+					
+				}
+			}
+			
+		infoClie[i].head_end = -1;
+	}
+}
 void loopTools::existClient(int i)
 {
-	char buffer[4096];
+
+	char buffer[BUFFER_SZ];
 	ssize_t reading = read(vecFds[i].fd, buffer, sizeof(buffer) - 1); // our read is non blocking io mean if our kernel buffer is empty read will not frozen here and wait
 	if (reading > 0)
 	{
 		buffer[reading] = '\0';
-		clieFiles[i - 1] += buffer;
-        size_t endofhead = clieFiles[i - 1].find("\r\n\r\n");
-		if (endofhead != std::string::npos) // if find /r/n/r/n truncate string from beg to the pos of /r/n/r/n call parser req /--/
-		{
-			std::string toParse = clieFiles[i - 1].substr(0, endofhead + 2);
-        }
+		
+		infoClie[i - 1].tmpRead = buffer; 
+
+		infoClie[i - 1].clieFile += buffer; // this one accumulate buffer
+
+		handleRequest(i - 1);
+        // size_t endofhead = infoClie[i - 1].tmpRead.find("\r\n\r\n");
+		 
+		// if (endofhead != std::string::npos)
+			// infoClie[i - 1].endofHead = true; // i should turn it false when the request finish
+	
+		// if (infoClie[i - 1].endofHead)
+		// {
+		// 	std::string toParse = infoClie[i - 1].clieFile.substr(0, endofhead + 2);
+		// 	/*SEND Toparse (header) to parser pers*/
+		// 	/*------------------------------------*/
+		// 	/*GET Return of the content length if exist*/
+		// 	int len = 92; // len = get_len() HERE it should be the function from parser that return the len of content 
+		// 	int bodyCheck = infoClie[i - 1].clieFile.size() - endofhead;
+
+		// 	if (ctlen && len > 0 && abs(bodyCheck) >= len)
+		// 	{
+		// 		std::string body = infoClie[i - 1].clieFile.substr(endofhead + 4, endofhead + 4 + len); // took body
+		// 		if (abs(bodyCheck) > len)
+		// 		{
+					
+		// 		}
+		// 	}
+			
+		// 		infoClie[i - 1].endofHead = false;
+
+		// }
         //check first if the Content-Length is match the size of a string or bigger
-							//  clieFiles[i - 1][endofhead] ---> clieFiles[i - 1][Content-Length]
+							//  allCli.clieFiles[i - 1][endofhead] ---> allCli.clieFiles[i - 1][Content-Length]
         std::cout << "server read from client " << vecFds[i].fd << ": " << buffer << std::endl;
 	}
     else if (reading == 0) // connection closed cleanly by the client (TCP FIN)
 	{
 		std::cout << "client: " << vecFds[i].fd << " disconnected" << '\n';
-		std::cout << "my clients files:  " << clieFiles[i - 1] << std::endl;
+		std::cout << "my clients files:  " << infoClie[i - 1].clieFile << std::endl;
 		close(vecFds[i].fd);
 		vecFds.erase(vecFds.begin() + i);
-		clieFiles.erase(clieFiles.begin() + i - 1); // 
+		infoClie.erase(infoClie.begin() + i - 1);
+		// infoClie[i - 1].erase(infoClie.begin() + i - 1); //
 		i--;
 	}
 }
@@ -115,7 +170,10 @@ void loopTools::mainLoop()
 				// handle a client conenction
 				newConnection();
 				// new client file
-				clieFiles.push_back(""); // 1
+				// allCli.clieFiles.push_back(""); // 1
+				myclients newClient;
+
+				infoClie.push_back(newClient);
 			}
 			else if (vecFds[i].revents & POLLIN) // a client want to do smth
 			{
