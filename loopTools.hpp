@@ -12,17 +12,9 @@
 
 #define BUFFER_SZ 200
 
-// struct myclients
-// {
-//     std::string clieFile;
-//     std::string tmpRead;
-//     int offset;
-// };
 struct myclients
 {
     std::string clieFile;
-    size_t head_end;
-    bool ishead;
 };
 
 class loopTools
@@ -39,7 +31,6 @@ class loopTools
         void mainLoop();
         void newConnection();
         void existClient(int i);
-        void handleRequest(int i);
         ~loopTools();
 };
 

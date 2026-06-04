@@ -61,7 +61,6 @@ void loopTools::newConnection()
 	fcntl(cli_sock, F_SETFL, O_NONBLOCK);
 
 //	add the master then override it with new client
-
 	vecFds.push_back(vecFds[0]);
 	vecFds.back().fd = cli_sock;
 	vecFds.back().events = POLLIN;
@@ -69,35 +68,11 @@ void loopTools::newConnection()
 	vecFds[0].revents = 0;
 	
 }
-void loopTools::handleRequest(int i)
-{
-	infoClie[i].head_end = infoClie[i].clieFile.find("\r\n\r\n");
-	if (infoClie[i].head_end != std::string::npos)
-			infoClie[i].ishead = true; // i should turn it false when the request finish
-	if (infoClie[i].ishead)
-	{
-		std::string toParse = infoClie[i].clieFile.substr(0, infoClie[i].head_end + 2);
-		/*SEND Toparse (header) to parser pers*/
-		/*------------------------------------*/
-		/*GET Return of the content length if exist*/
-		int len = 180; // len = get_len() HERE it should be the function from parser that return the len of content 
-		int bodyCheck = infoClie[i].clieFile.size() - infoClie[i].head_end;
-		if (/*content-length &&*/ abs(bodyCheck) >= len /*|| Transfer-Encoding: chunked*/ )
-		{
-			std::string body = infoClie[i].clieFile.substr(infoClie[i].head_end + 4, infoClie[i].head_end + 4 + len); // took body
-			if (abs(bodyCheck) > len /* && keep_alive*/)
-			{
-				// take the next request override the first one
-				infoClie[i].clieFile = infoClie[i].clieFile.substr(infoClie[i].head_end + 4 + len);
-				// loop or recursion
-			}
-			infoClie[i].ishead = false;
-		}
-	}
-}
+
+
 void loopTools::existClient(int i)
 {
-
+	// HttpRequest parserObj;
 	char buffer[BUFFER_SZ];
 	ssize_t reading = read(vecFds[i].fd, buffer, sizeof(buffer) - 1); // our read is non blocking io mean if our kernel buffer is empty read will not frozen here and wait
 	if (reading > 0)
@@ -106,10 +81,10 @@ void loopTools::existClient(int i)
 		
 		infoClie[i - 1].clieFile += buffer; // this one accumulate buffer
 
-		handleRequest(i - 1);
+		// if (parserObj.parse_request(infoClie[i - 1].clieFile))
+		// handleRequest(i - 1);
 
-        //check first if the Content-Length is match the size of a string or bigger
-							//  allCli.clieFiles[i - 1][endofhead] ---> allCli.clieFiles[i - 1][Content-Length]
+        
         std::cout << "server read from client " << vecFds[i].fd << ": " << buffer << std::endl;
 	}
     else if (reading == 0) // connection closed cleanly by the client (TCP FIN)
@@ -119,7 +94,7 @@ void loopTools::existClient(int i)
 		close(vecFds[i].fd);
 		vecFds.erase(vecFds.begin() + i);
 		infoClie.erase(infoClie.begin() + i - 1);
-		// infoClie[i - 1].erase(infoClie.begin() + i - 1); //
+		infoClie[i - 1].erase(infoClie.begin() + i - 1); //
 		i--;
 	}
 }
@@ -141,7 +116,6 @@ void loopTools::mainLoop()
 				// handle a client conenction
 				newConnection();
 				// new client file
-				// allCli.clieFiles.push_back(""); // 1
 				myclients newClient;
 
 				infoClie.push_back(newClient);
