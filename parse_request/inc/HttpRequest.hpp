@@ -20,6 +20,7 @@ class HttpRequest
 		int errorCode;
 	public:
 		HttpRequest();
+		enum {INCOMPLETE, DONE, ERROR} rtype;
 		std::string method;
 		std::string request_target;
 		std::string query;

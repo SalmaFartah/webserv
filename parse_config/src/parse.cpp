@@ -42,12 +42,3 @@ void conf::read_file(std::ifstream& conf)
     }
 
 }
-
-// void conf::print_tokenz()
-// {
-//     for (size_t i = 0; i < vecToken.size(); i++)
-//     {
-//         std::cout << "TYPE: " << vecToken[i].first << " VALUE: " << vecToken[i].second << std::endl;       
-//     }
-    
-// }

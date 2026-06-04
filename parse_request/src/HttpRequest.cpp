@@ -115,6 +115,7 @@ bool HttpRequest::parse_headers()
 
 bool HttpRequest::parse_request(std::string request)
 {
+    // get
     // hna ghan9aleb 3la \r\n ida ma l9ithash ghanreturni 1 u ghayzid l core i9ra data 
     // u isifthali u ghayb9a haka tanl9a \r\n
     ssize_t HeaderBegin = request.find("\r\n");
