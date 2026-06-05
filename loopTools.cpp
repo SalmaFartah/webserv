@@ -1,4 +1,5 @@
 #include "loopTools.hpp"
+#include "parse_request/inc/HttpRequest.hpp"
 
 loopTools::loopTools()
 {
@@ -72,7 +73,7 @@ void loopTools::newConnection()
 
 void loopTools::existClient(int i)
 {
-	// HttpRequest parserObj;
+	HttpRequest parserObj;
 	char buffer[BUFFER_SZ];
 	ssize_t reading = read(vecFds[i].fd, buffer, sizeof(buffer) - 1); // our read is non blocking io mean if our kernel buffer is empty read will not frozen here and wait
 	if (reading > 0)
@@ -81,7 +82,7 @@ void loopTools::existClient(int i)
 		
 		infoClie[i - 1].clieFile += buffer; // this one accumulate buffer
 
-		// if (parserObj.parse_request(infoClie[i - 1].clieFile))
+		if (parserObj.parse_request(infoClie[i - 1].clieFile))
 		// handleRequest(i - 1);
 
         

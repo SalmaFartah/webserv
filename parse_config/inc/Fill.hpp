@@ -9,7 +9,7 @@
 #include <set>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include "../tokenz/parse.hpp"
+#include "parse.hpp"
 
 enum state { LOCATION, SERVER };
 
@@ -27,11 +27,12 @@ typedef struct locationConf
     std::string cgi_extension; // script extension: .php/.py/.pl
     std::string cgi_pass; // the executer that will run the script
     bool defaultm;
-    locationConf()
+    locationConf() // CHECK THIS LATER
     {
         methods.insert("GET");
         methods.insert("POST");
         methods.insert("DELETE");
+        defaultm = true;
     };
 }   locationConf;
 
