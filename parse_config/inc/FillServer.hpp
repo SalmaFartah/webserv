@@ -16,3 +16,5 @@ class FillServer : public Fill
         void fillServer(std::vector<std::pair<tokenType, std::string> >, size_t&);
         ~FillServer();
 };
+
+std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string> > tokens);
