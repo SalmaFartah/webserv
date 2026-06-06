@@ -49,6 +49,8 @@ typedef struct serverConf
     bool defaulti;
     serverConf()
     {
+        defaults = true;
+        defaulti = true;
         body_size = 1048576;
         listen.push_back(std::make_pair("0.0.0.0", 80));
         index.push_back("index.html");
@@ -78,6 +80,7 @@ class Fill
 		Fill();
 	    serverConf server;
 		locationConf location;
-		~Fill();
+		virtual ~Fill();
 };
 
+void print_config(std::vector<serverConf> conf);

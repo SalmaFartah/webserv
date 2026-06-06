@@ -34,7 +34,7 @@ void FillLocation::methodsHandler( std::vector<std::string> values, state)
 		location.defaultm = false;
 	}
 	if (!values.size())
-		throw std::logic_error("Error: allowed_methods: missing value.");
+		throw std::logic_error("Error: allowed_method: missing value.");
 	std::pair<std::set<std::string>::iterator, bool> result;
 	for (size_t i = 0; i < values.size(); i++)
 	{
@@ -45,9 +45,9 @@ void FillLocation::methodsHandler( std::vector<std::string> values, state)
 		else if (values[i] == "DELETE")
 			result = location.methods.insert("DELETE");
 		else
-			throw std::logic_error("Error: allowed_methods: invalid method: `" + values[i] + "'");
+			throw std::logic_error("Error: allowed_method: invalid method: `" + values[i] + "'");
 		if (!result.second)
-			throw std::logic_error("Error: allowed_methods: duplicate method: `" + values[i] + "'");
+			throw std::logic_error("Error: allowed_method: duplicate method: `" + values[i] + "'");
 	}
 }
 
