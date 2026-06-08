@@ -16,7 +16,7 @@ class HttpRequest
 		std::string header;
 		bool parse_headers();
 		void extract_query();
-		bool valid_value(std::string);
+		bool invalid_value(std::string);
 		bool parse_body(size_t, std::string);
 		int errorCode;
 		enum {CHUNKED, NORMAL} bodyType;
@@ -31,6 +31,6 @@ class HttpRequest
 		std::string httpVersion;
 		std::map<std::string, std::string> headers;
 		std::string body;
-		void parse_request(std::string);
+		void parse_request(std::string, int pos);
 		~HttpRequest();
 };

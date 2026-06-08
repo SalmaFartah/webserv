@@ -57,14 +57,14 @@ bool HttpRequest::isprintSTR(std::string str)
 	return true;
 }
 
-bool HttpRequest::valid_value(std::string value)
+bool HttpRequest::invalid_value(std::string value)
 {
 	errno = 0;
 	char *end = NULL;
 	size_t holder = strtoull(value.c_str(), &end, 10);
 	if (value[0] == '-' || value[0] == '+' || errno == ERANGE || *end)
-		return false;
-	return true;
+		return true;
+	return false;
 }
 
 bool HttpRequest::parse_headers()
@@ -96,7 +96,7 @@ bool HttpRequest::parse_headers()
 	
 
 		if ((key == "host" && (headers.count("host") || value.empty()))
-		|| (key == "content-length" && (headers.count("content-length") || !valid_value(value)))
+		|| (key == "content-length" && (headers.count("content-length") || invalid_value(value)))
 		|| (key == "transfer-encoding" && (value != "chunked" || headers.count("transfer-encoding"))))
 		{
 			errorCode = 400;
@@ -139,17 +139,24 @@ bool HttpRequest::parse_body(size_t pos, std::string request)
 		{
 			body = body.substr(0, nbytes);
 			rtype = ANOTHER;
+			parseState = INHEADER;
 		}
 	}
+	else if (bodyType == CHUNKED)
+	{
+		size_t BodyEnd = request.find("0\r\n\r\n", pos);
+
+	}
+	
 	return true;
 }
 
-void HttpRequest::parse_request(std::string request)
+void HttpRequest::parse_request(std::string request, int pos)
 {
 	size_t HeaderEnd;
 	size_t HeaderBegin;
-	// hna ghan9aleb 3la \r\n ida ma l9ithash ghanreturni 1 u ghayzid l core i9ra data 
-	// u isifthali u ghayb9a haka tanl9a \r\n
+	// hna ghan9aleb 3la \r\n\r\n ida ma l9ithash ghanreturni 1 u ghayzid l core i9ra data 
+	// u isifthali u ghayb9a haka tanl9a \r\n\r\n
 	if (parseState == INHEADER)
 	{
 		HeaderEnd = request.find("\r\n\r\n");
@@ -181,7 +188,6 @@ void HttpRequest::parse_request(std::string request)
 	rtype = DONE;
 	if (!parse_body(HeaderEnd + 4, request))
 		return ;
-	
 }
 
 HttpRequest::HttpRequest()
