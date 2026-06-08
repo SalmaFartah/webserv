@@ -13,7 +13,7 @@ all: $(NAME)
 $(NAME) : $(OBJ)
 	@$(CXX) $(CXXFLAGS) $(OBJ) -o $(NAME)
 	
-%.o : %.cpp parse_config/src/Fill.hpp parse_config/src/FillLocation.hpp parse_config/src/FillServer.hpp parse_config/src/parse.hpp
+%.o : %.cpp parse_config/inc/Fill.hpp parse_config/inc/FillLocation.hpp parse_config/inc/FillServer.hpp parse_config/inc/parse.hpp
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean :

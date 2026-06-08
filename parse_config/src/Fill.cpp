@@ -225,43 +225,62 @@ void Fill::ErrPgHandler(std::vector<std::string> values, state type)
 		throw std::logic_error("Error: error_page: invalid path");
 }
 
-bool DiffServerDup(std::pair<std::string, int> element, std::vector<serverConf> &conf, std::vector<serverConf>::iterator conf_it)
+void DiffServerDup(std::pair<std::string, int> element, std::vector<serverConf> &conf, std::vector<serverConf>::iterator conf_it)
 {
-	if (element.first == "0.0.0.0")
-	{
-		int cnt = 0;
-		for (std::vector<serverConf>::iterator it = conf.begin(); it != conf.end(); it++)
-		{
-			if (std::count_if(it->listen.begin(), it->listen.end(), HasPort(element.second)))
-				cnt++;
-		}
-		if (cnt > 1)
-			return true;				
-	}
+	std::vector<serverConf>::iterator current = conf_it - 1;
 	while (conf_it != conf.end())
 	{
 		if (std::count(conf_it->listen.begin(), conf_it->listen.end(), element))
-			return true;
+		{
+			throw std::logic_error("Error: listen: duplicate ip:port: `"
+			+ element.first + ":" + to_string(element.second) + "'");
+		}
 		conf_it++;
 	}
-	return false;
+	if (element.first == "0.0.0.0")
+	{
+		for (std::vector<serverConf>::iterator it = conf.begin(); it != conf.end(); it++)
+		{
+			std::vector<std::pair<std::string, int> >::iterator iter;
+			iter = std::find_if(it->listen.begin(), it->listen.end(), HasPort(element.second));
+			if (iter != it->listen.end() && it != current)
+				throw std::logic_error("Error: listen: conflict ip:port `"
+				+ element.first + ":" + to_string(element.second) 
+				+ "' with `" + iter->first + ":" + to_string(iter->second) + "'");
+		}
+	}
 }
-// 0.0.0.0:port
-// bool x(std::pair<std::string, int> p)
-// {
-// 	p.second = 
-// }
 
-bool SameServerDup(std::vector<std::pair<std::string, int> > &listen)
+void SameServerDup(std::vector<std::pair<std::string, int> > &listen)
 {
+	/*
+	loop throw listen vector and compare each element with the remaining elements in the vector
+	and when ip 0.0.0.0 found i compare his port with all ports in the vector
+	*/
 	std::vector<std::pair<std::string, int> >::iterator listen_it;
 	for(listen_it = listen.begin(); listen_it != listen.end(); listen_it++)
 	{
-		if ((listen_it->first == "0.0.0.0" && std::count_if(listen.begin(), listen.end(), HasPort(listen_it->second)) > 1)
-		|| std::count(listen.begin(), listen.end(), *listen_it) > 1)
-			return true;
+		if (std::count(listen_it + 1, listen.end(), *listen_it))
+			throw std::logic_error("Error: listen: duplicate ip:port: `"
+			+ listen_it->first + ":" + to_string(listen_it->second) + "'");
+		
+		if (listen_it->first == "0.0.0.0")
+		{
+			std::vector<std::pair<std::string, int> >::iterator iter;
+			iter = std::find_if(listen.begin(), listen.end(), HasPort(listen_it->second));
+			if (iter != listen.end() && iter != listen_it)
+				throw std::logic_error("Error: listen: conflict ip:port `" 
+				+ listen_it->first + ":" + to_string(listen_it->second) 
+				+ "' with `" + iter->first + ":" + to_string(iter->second) + "'");
+		}
 	}
-	return false;
+}
+
+std::string to_string(int val)
+{
+    std::ostringstream oss;
+    oss << val;
+    return oss.str();
 }
 
 void checkPortConflict(std::vector<serverConf> conf)
@@ -270,12 +289,10 @@ void checkPortConflict(std::vector<serverConf> conf)
 	std::vector<std::pair<std::string, int> >::iterator listen_it;
 	for (conf_it = conf.begin(); conf_it != conf.end(); conf_it++)
 	{
-		if (SameServerDup(conf_it->listen))
-			throw std::logic_error("Error: conflicting ip:port in listen.");
+		SameServerDup(conf_it->listen);
 		for (listen_it = conf_it->listen.begin(); listen_it < conf_it->listen.end(); listen_it++)
 		{
-			if (DiffServerDup(*listen_it, conf, conf_it + 1))
-				throw std::logic_error("Error: conflicting ip:port in listen.");
+			DiffServerDup(*listen_it, conf, conf_it + 1);
 		}
 	}
 }

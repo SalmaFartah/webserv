@@ -96,3 +96,4 @@ class Fill
 
 void print_config(std::vector<serverConf> conf);
 void checkPortConflict(std::vector<serverConf>);
+std::string to_string(int val);
