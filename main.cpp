@@ -20,7 +20,7 @@ int main(int ac, char *av[])
 	try
 	{
 		std::vector<serverConf> servers = parseConfig(confObj.getTokenz());
-		print_config(servers);
+		// print_config(servers);
 	}
 	catch(const std::exception& e)
 	{
