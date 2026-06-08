@@ -171,6 +171,6 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 
 	if (state != GLOBAL)
 		throw std::runtime_error("Unclosed block at end of file");
-
+	checkPortConflict(servers);
 	return servers;
 }

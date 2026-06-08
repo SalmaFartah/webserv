@@ -9,9 +9,20 @@
 #include <set>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <algorithm>
 #include "parse.hpp"
 
 enum state { LOCATION, SERVER };
+
+struct HasPort
+{
+    int port;
+    HasPort(int p) : port(p) {}
+    bool operator()(const std::pair<std::string, int>& p) const
+    {
+        return p.second == port;
+    }
+};
 
 typedef struct locationConf
 {
@@ -84,3 +95,4 @@ class Fill
 };
 
 void print_config(std::vector<serverConf> conf);
+void checkPortConflict(std::vector<serverConf>);
