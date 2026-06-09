@@ -145,7 +145,12 @@ bool HttpRequest::parse_body(size_t pos, std::string request)
 	else if (bodyType == CHUNKED)
 	{
 		size_t BodyEnd = request.find("0\r\n\r\n", pos);
-
+		if (BodyEnd == std::string::npos)
+		{
+			rtype = INCOMPLETE;
+			return false;
+		}
+		
 	}
 	
 	return true;
