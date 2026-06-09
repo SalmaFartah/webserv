@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <map>
 #include <iostream>
 #include <sys/select.h>
 #include <sys/socket.h>
@@ -8,28 +9,33 @@
 #include <unistd.h>
 #include <poll.h>
 #include <stdbool.h>
+#include "parse_config/inc/parse.hpp"
+#include "parse_config/inc/FillLocation.hpp"
+#include "parse_config/inc/FillServer.hpp"
 
 #define BUFFER_SZ 200
+
 
 struct myclients
 {
     std::string clieFile;
+    serverConf  *cliConf;
 };
+
 
 class loopTools
 {
     private:
         std::vector<struct myclients> infoClie;
-        int servsock;
         std::vector<struct pollfd> vecFds;
-        bool ctlen;
+        size_t serv_nb;
+        std::map<int, serverConf*> linkServConf;
     public:
         loopTools();
-        // void inite_server();
-        std::vector<struct pollfd> getFds() const;
+        loopTools(std::vector<serverConf> servers);
         void mainLoop();
-        void newConnection();
-        void existClient(int i);
+        void newConnection(struct pollfd& server);
+        void existClient(struct pollfd& client, int clieIdx);
         ~loopTools();
 };
 
