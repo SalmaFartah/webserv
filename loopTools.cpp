@@ -53,8 +53,6 @@ loopTools::loopTools(std::vector<serverConf> servers) : serv_nb(0)
 			serv_nb++;
 		}
 	}
-	// std::cout << "serversvec " << vecFds.size() << "\n";
-	// std::cout << "servers nb " << serv_nb << "\n";
 	
 }
 
@@ -104,12 +102,12 @@ void loopTools::existClient(struct pollfd& client, int clieIdx)
     else if (reading == 0) // connection closed cleanly by the client (TCP FIN)
 	{
 		std::cout << "client: " << client.fd << " disconnected" << '\n';
-		std::cout << "MY CLIENT FILES:  \n" << infoClie[clieIdx].clieFile << std::endl;
-		std::cout << "THIS VECeRase >>>>: " << serv_nb + clieIdx << std::endl;
+		// std::cout << "MY CLIENT FILES:  \n" << infoClie[clieIdx].clieFile << std::endl;
+		// std::cout << "THIS VECeRase >>>>: " << serv_nb + clieIdx << std::endl;
 		close(client.fd);
 		vecFds.erase(vecFds.begin() + serv_nb + clieIdx);
 		infoClie.erase(infoClie.begin() + clieIdx);
-		std::cout << "THIS INFOCLIE ERASE >>>>: " << clieIdx << std::endl;
+		// std::cout << "THIS INFOCLIE ERASE >>>>: " << clieIdx << std::endl;
 	}
 }
 
