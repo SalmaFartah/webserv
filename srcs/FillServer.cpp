@@ -1,4 +1,5 @@
 #include "../include/FillServer.hpp"
+#include <cstring>
 
 FillServer::FillServer()
 {

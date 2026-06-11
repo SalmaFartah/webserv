@@ -20,10 +20,12 @@ typedef struct locationConf
     std::pair<int, std::string> http_redire; // return direct
     std::string root; // path where exist ure site's files
     bool autoindex; // on/off
+    bool autoindex_set;
     std::vector<std::string> index; // index index.php index.html;
     std::string upload_store; // path where the client post smth
 	std::map<int, std::string> error_page;
     size_t body_size;
+    bool body_size_set;
     std::string cgi_extension; // script extension: .php/.py/.pl
     std::string cgi_pass; // the executer that will run the script
     bool defaultm;
@@ -32,6 +34,11 @@ typedef struct locationConf
         methods.insert("GET");
         methods.insert("POST");
         methods.insert("DELETE");
+        autoindex = false;
+        autoindex_set = false;
+        body_size = 0;
+        body_size_set = false;
+        defaultm = true;
     };
 }   locationConf;
 

@@ -72,6 +72,20 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 						}
 					}
 
+					for (size_t i = 0; i < currentServer.locations.size(); i++)
+					{
+						locationConf &loc = currentServer.locations[i];
+
+						if (loc.root.empty() && !currentServer.root.empty())
+							loc.root = currentServer.root;
+						if (loc.index.empty() && !currentServer.index.empty())
+							loc.index = currentServer.index;
+						if (!loc.autoindex_set)
+							loc.autoindex = currentServer.autoindex;
+						if (!loc.body_size_set)
+							loc.body_size = currentServer.body_size;
+					}
+
 					servers.push_back(currentServer);
 
 					state = GLOBAL;
@@ -116,7 +130,7 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 					// inherit server directives
 					currentLocation.root = currentServer.root;
 					currentLocation.autoindex = currentServer.autoindex;
-					currentLocation.client_max_body_size = currentServer.client_max_body_size;
+					currentLocation.body_size = currentServer.body_size;
 
 					state = IN_LOCATION;
 				}
@@ -128,7 +142,7 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 					if (required.find(value) != required.end())
 						required[value] = true;
 
-					filler.server.server = currentServer;
+					filler.server = currentServer;
 
 					filler.fillServer(tokens, pos);
 
@@ -151,7 +165,7 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 				// location directives
 				else if (type == WORD)
 				{
-					filler.location.location = currentLocation;
+					filler.location = currentLocation;
 
     				filler.fillLocation(tokens, pos);
 
