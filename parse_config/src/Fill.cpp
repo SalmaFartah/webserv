@@ -1,4 +1,5 @@
 #include "../inc/Fill.hpp"
+#include <limits>
 
 bool Fill::str_digit(std::string str)
 {
@@ -109,14 +110,20 @@ void Fill::autoindexHandler( std::vector<std::string> values, state type)
 	if (values[0] == "on")
 	{
 		if (type == LOCATION)
+		{
+			location.autoindex_set = true;
 			location.autoindex = true;
+		}
 		else
 			server.autoindex = true;
 	}
 	else if (values[0] == "off")
 	{
 		if (type == LOCATION)
+		{
+			location.autoindex_set = true;
 			location.autoindex = false;
+		}
 		else
 			server.autoindex = false;
 	}
@@ -193,7 +200,10 @@ void Fill::BodySzHandler(std::vector<std::string> values, state type)
 	if (type == SERVER)
 		server.body_size = value;
 	else
+	{
+		location.body_size_set = true;
 		location.body_size = value;	
+	}
 }
 
 void Fill::ErrPgHandler(std::vector<std::string> values, state type)
