@@ -144,19 +144,29 @@ bool HttpRequest::parse_body(size_t pos, std::string request)
 	}
 	else if (bodyType == CHUNKED)
 	{
-		size_t BodyEnd = request.find("0\r\n\r\n", pos);
+		std::string chunkEnd = "0\r\n\r\n";
+		size_t BodyEnd = request.find(chunkEnd, pos);
 		if (BodyEnd == std::string::npos)
 		{
 			rtype = INCOMPLETE;
 			return false;
 		}
+		body = request.substr(pos, BodyEnd - pos);
+		for (size_t i = 0; i < body.size(); i++)
+		{
+			size_t pos = body.find("\r\n");
+			
+		}
 		
+		std::ostringstream ss;
+		std::cout << "[" + request.substr(pos, BodyEnd - pos) + "]" << std::endl;
+		ss << body;
 	}
 	
 	return true;
 }
 
-void HttpRequest::parse_request(std::string request, int pos)
+void HttpRequest::parse_request(std::string request, serverConf * conf)
 {
 	size_t HeaderEnd;
 	size_t HeaderBegin;
