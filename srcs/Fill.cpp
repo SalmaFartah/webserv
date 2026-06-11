@@ -1,4 +1,5 @@
 #include "../include/Fill.hpp"
+#include <limits>
 
 bool Fill::str_digit(std::string str)
 {
