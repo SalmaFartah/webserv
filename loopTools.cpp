@@ -2,6 +2,11 @@
 
 
 loopTools::loopTools(){};
+void loopTools::close_fds()
+{
+	for (size_t i = 0; i < serv_nb; i++)
+		close(3 + i);
+}
 loopTools::loopTools(std::vector<serverConf> servers) : serv_nb(0)
 {
 
@@ -12,7 +17,9 @@ loopTools::loopTools(std::vector<serverConf> servers) : serv_nb(0)
 			int serverFd = socket(AF_INET, SOCK_STREAM, 0);
 			if (serverFd < 0)
 				throw std::logic_error("failed socket");
+			serv_nb++;
 			
+
 			sockaddr_in servaddr;
 			// initliaze a fresh struct and avoid any garbage
 			memset(&servaddr, 0, sizeof(servaddr));
@@ -35,7 +42,11 @@ loopTools::loopTools(std::vector<serverConf> servers) : serv_nb(0)
 			// the second parametre: the operating system kernel fills it in with the incoming client's network identity once a connection lands
 			// If your server does not care about the IP address or port of incoming clients, we can set sersock, NULL, NULL 
 			if (bind(serverFd, (const sockaddr *)&servaddr, sizeof(servaddr)) < 0)
+			{
 				perror("bind: ");
+				close_fds();
+				exit(1);
+			}
 			
 		// tells the OS to start queuing incoming connections
 		// backlog — how many connections can queue up waiting to be accepted
@@ -50,12 +61,15 @@ loopTools::loopTools(std::vector<serverConf> servers) : serv_nb(0)
 			vecFds.push_back(fds);
 
 			linkServConf[serverFd] = &servers[i];
-			serv_nb++;
 		}
 	}
 	
 }
 
+void loopTools::incompleteCase()
+{
+	
+}
 
 void loopTools::newConnection(struct pollfd& server)
 {
@@ -84,7 +98,6 @@ void loopTools::newConnection(struct pollfd& server)
 
 void loopTools::existClient(struct pollfd& client, int clieIdx)
 {
-	// HttpRequest parserObj;
 	char buffer[BUFFER_SZ];
 	ssize_t reading = read(client.fd, buffer, sizeof(buffer) - 1); // our read is non blocking io mean if our kernel buffer is empty read will not frozen here and wait
 	if (reading > 0)
@@ -92,11 +105,22 @@ void loopTools::existClient(struct pollfd& client, int clieIdx)
 		buffer[reading] = '\0';
 		
 		infoClie[clieIdx].clieFile += buffer; // this one accumulate buffer
+		infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf);
+		
+		// if (infoClie[clieIdx].request.rtype == 0) // INCOMPLETE
+		// {
+		// 	// set timer overide each time
+		// 	infoClie[clieIdx].clieTime = std::time(NULL);
+		// 	// continue;
+		// 	incompleteCase();
+		// }
+		// else if (infoClie[clieIdx].request.rtype == 3) // THIS case is complete and i must send the file again till done and treate each response
+		// {
+		// 	// the parser will return each request seprately
 
-		// if (parserObj.parse_request(infoClie[clieIdx]))
-		// handleRequest(clieIdx);
+		// }
+		
 
-        
         std::cout << "server read from client " << client.fd << ": " << buffer << std::endl;
 	}
     else if (reading == 0) // connection closed cleanly by the client (TCP FIN)
@@ -123,14 +147,23 @@ void loopTools::mainLoop()
 		}
 		for (size_t i = 0; i < vecFds.size(); i++)
 		{
-			if (i < serv_nb  && vecFds[i].revents & POLLIN) // new connection arrived
+			if (i >= serv_nb && !(vecFds[i].revents) && difftime(std::time(NULL), infoClie[i].clieTime > 30.0))
+			{
+				// close the connection and fds, and remove this client and continue
+				continue;
+			}
+			else if (i < serv_nb  && vecFds[i].revents & POLLIN) // new connection arrived
 			{
 				// handle a client conenction
 				newConnection(vecFds[i]);
 				// new client file and config
+				// aboutClient()
 				myclients newClient;
 
 				newClient.cliConf = linkServConf[vecFds[i].fd];
+				// start count time of a client
+				newClient.clieTime = std::time(NULL);
+				//
 				infoClie.push_back(newClient);
 			}
 			else if (vecFds[i].revents & POLLIN) // a client want to do smth
@@ -140,10 +173,7 @@ void loopTools::mainLoop()
 				size_t tmp = vecFds.size();
 				existClient(vecFds[i], clieIdx);
 				if (tmp != vecFds.size()) // if a client disco
-				{
-					// std::cout << "HERE\n";
 					i--;
-				}
 			}
 		}
 	}
