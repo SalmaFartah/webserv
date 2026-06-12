@@ -7,8 +7,8 @@
 #include <vector>
 #include <cctype>
 #include <algorithm>
-#include "../parse_config/inc/FillServer.hpp"
-#include "../parse_config/inc/FillLocation.hpp"
+#include "../../parse_config/inc/FillServer.hpp"
+#include "../../parse_config/inc/FillLocation.hpp"
 
 class HttpRequest
 {
@@ -19,14 +19,10 @@ class HttpRequest
 		bool parse_headers();
 		void extract_query();
 		bool invalid_value(std::string);
-		bool parse_body(size_t, std::string);
+		bool parse_body(size_t, std::string, serverConf *);
 		int errorCode;
 		enum {CHUNKED, NORMAL} bodyType;
 		enum {INHEADER, INBODY} parseState;
-
-	public:
-		HttpRequest();
-		enum {INCOMPLETE, DONE, ERROR, ANOTHER} rtype;
 		bool keepAlive;
 		std::string method;
 		std::string request_target;
@@ -34,6 +30,10 @@ class HttpRequest
 		std::string httpVersion;
 		std::map<std::string, std::string> headers;
 		std::string body;
+
+	public:
+		HttpRequest();
+		enum {INCOMPLETE, DONE, ERROR, ANOTHER} rtype;
 		void parse_request(std::string, serverConf *);
 		~HttpRequest();
 };

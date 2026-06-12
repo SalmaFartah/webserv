@@ -123,13 +123,20 @@ bool HttpRequest::parse_headers()
 	return true;
 }
 
-bool HttpRequest::parse_body(size_t pos, std::string request)
+bool HttpRequest::parse_body(size_t bodystrat, std::string request, serverConf *conf)
 {
 	if (bodyType == NORMAL)
 	{
 		char *end = NULL;
 		size_t nbytes = strtoull(headers["content-length"].c_str(), &end, 10);
-		body = request.substr(pos);
+		if (nbytes > conf->body_size)
+		{
+			rtype = ERROR;
+			errorCode = 413;
+			return false;
+		}
+		
+		body = request.substr(bodystrat);
 		if (body.size() < nbytes)
 		{
 			rtype = INCOMPLETE;
@@ -144,29 +151,43 @@ bool HttpRequest::parse_body(size_t pos, std::string request)
 	}
 	else if (bodyType == CHUNKED)
 	{
-		std::string chunkEnd = "0\r\n\r\n";
-		size_t BodyEnd = request.find(chunkEnd, pos);
-		if (BodyEnd == std::string::npos)
-		{
-			rtype = INCOMPLETE;
-			return false;
-		}
-		body = request.substr(pos, BodyEnd - pos);
-		for (size_t i = 0; i < body.size(); i++)
-		{
-			size_t pos = body.find("\r\n");
-			
-		}
+		// std::string chunkEnd = "0\r\n\r\n";
+		// size_t BodyEnd = request.find(chunkEnd, bodystrat);
+		// if (BodyEnd == std::string::npos)
+		// {
+		// 	rtype = INCOMPLETE;
+		// 	return false;
+		// }
+		// if (request.size() > bodystrat + BodyEnd + chunkEnd.size())
+		// 	rtype = ANOTHER;
+		// body = request.substr(bodystrat, BodyEnd - bodystrat); // store the whole body into the body object => 7\r\nMozilla\r\n9\r\nDeveloper\r\n7\r\nNetwork\r\n0\r\n\r\n
+		// if (!body.size())
+		// 	return true;
+		// std::cout << "[" << body << "]" << std::endl;
+		size_t pos1 = body.find("\r\n");
 		
-		std::ostringstream ss;
-		std::cout << "[" + request.substr(pos, BodyEnd - pos) + "]" << std::endl;
-		ss << body;
+		// std::string sizeSTR = body.substr(0, pos1);
+		// char *end = NULL;
+		// size_t chunksize = strtoull(sizeSTR.c_str(), &end, 10);
+		// if (sizeSTR[0] == '-' || sizeSTR[0] == '+' || errno == ERANGE || *end)
+		// {
+		// 	rtype = ERROR;
+		// 	errorCode = 400;
+		// 	return false;
+		// }
+			// pos1 += 2;
+		// 	size_t pos1 = body.find("\r\n", pos1 + 2);
+		// 	std::string chunk;
+		// 	chunk = body.substr(pos1, chunksize);
+		
+		// std::ostringstream ss;
+		// ss << body;
 	}
 	
 	return true;
 }
 
-void HttpRequest::parse_request(std::string request, serverConf * conf)
+void HttpRequest::parse_request(std::string request, serverConf *conf)
 {
 	size_t HeaderEnd;
 	size_t HeaderBegin;
@@ -201,7 +222,7 @@ void HttpRequest::parse_request(std::string request, serverConf * conf)
 		parseState = INBODY;
 	}
 	rtype = DONE;
-	if (!parse_body(HeaderEnd + 4, request))
+	if (!parse_body(HeaderEnd + 4, request, conf))
 		return ;
 }
 
