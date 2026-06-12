@@ -30,7 +30,7 @@ class HttpRequest
 		std::string httpVersion;
 		std::map<std::string, std::string> headers;
 		std::string body;
-
+		size_t body_size;
 	public:
 		HttpRequest();
 		enum {INCOMPLETE, DONE, ERROR, ANOTHER} rtype;

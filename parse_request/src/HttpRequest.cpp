@@ -61,7 +61,7 @@ bool HttpRequest::invalid_value(std::string value)
 {
 	errno = 0;
 	char *end = NULL;
-	size_t holder = strtoull(value.c_str(), &end, 10);
+	size_t holder = strtoul(value.c_str(), &end, 10);
 	if (value[0] == '-' || value[0] == '+' || errno == ERANGE || *end)
 		return true;
 	return false;
@@ -117,6 +117,7 @@ bool HttpRequest::parse_headers()
 	|| (headers.count("content-length") && headers.count("transfer-encoding")) \
 	|| (method == "POST" && !headers.count("content-length") && !headers.count("transfer-encoding")))
 	{
+		rtype = ERROR;
 		errorCode = 400;
 		return false;
 	}
@@ -128,60 +129,41 @@ bool HttpRequest::parse_body(size_t bodystrat, std::string request, serverConf *
 	if (bodyType == NORMAL)
 	{
 		char *end = NULL;
-		size_t nbytes = strtoull(headers["content-length"].c_str(), &end, 10);
-		if (nbytes > conf->body_size)
-		{
-			rtype = ERROR;
-			errorCode = 413;
-			return false;
-		}
-		
+		body_size = strtoul(headers["content-length"].c_str(), &end, 10);
 		body = request.substr(bodystrat);
-		if (body.size() < nbytes)
+		if (body.size() < body_size)
 		{
 			rtype = INCOMPLETE;
 			return false;
 		}
-		else if (body.size() > nbytes && keepAlive)
+		else if (body.size() > body_size && keepAlive)
 		{
-			body = body.substr(0, nbytes);
+			body = body.substr(0, body_size);
 			rtype = ANOTHER;
 			parseState = INHEADER;
 		}
 	}
 	else if (bodyType == CHUNKED)
 	{
-		// std::string chunkEnd = "0\r\n\r\n";
-		// size_t BodyEnd = request.find(chunkEnd, bodystrat);
-		// if (BodyEnd == std::string::npos)
-		// {
-		// 	rtype = INCOMPLETE;
-		// 	return false;
-		// }
-		// if (request.size() > bodystrat + BodyEnd + chunkEnd.size())
-		// 	rtype = ANOTHER;
-		// body = request.substr(bodystrat, BodyEnd - bodystrat); // store the whole body into the body object => 7\r\nMozilla\r\n9\r\nDeveloper\r\n7\r\nNetwork\r\n0\r\n\r\n
-		// if (!body.size())
-		// 	return true;
-		// std::cout << "[" << body << "]" << std::endl;
-		size_t pos1 = body.find("\r\n");
+		std::string bodyreq = request.substr(bodystrat);
+		size_t pos1 = bodyreq.find("\r\n");
+		std::string sizeSTR = bodyreq.substr(0, pos1);
+		size_t size;
+		if (sizeSTR[0] != '+' && sizeSTR[0] != '-')
+		{
+			char *end = NULL;
+			size = strtoul(sizeSTR.c_str(), &end, 16);
+			if (errno == ERANGE || *end)
+			{
+				errorCode = 400;
+
+			}
+			
+		}
 		
-		// std::string sizeSTR = body.substr(0, pos1);
-		// char *end = NULL;
-		// size_t chunksize = strtoull(sizeSTR.c_str(), &end, 10);
-		// if (sizeSTR[0] == '-' || sizeSTR[0] == '+' || errno == ERANGE || *end)
-		// {
-		// 	rtype = ERROR;
-		// 	errorCode = 400;
-		// 	return false;
-		// }
-			// pos1 += 2;
-		// 	size_t pos1 = body.find("\r\n", pos1 + 2);
-		// 	std::string chunk;
-		// 	chunk = body.substr(pos1, chunksize);
-		
-		// std::ostringstream ss;
-		// ss << body;
+		std::cout << "pos: " << "[" << pos1 << "]" << std::endl;
+		std::cout << "[" << sizeSTR << "]" << std::endl;
+
 	}
 	
 	return true;

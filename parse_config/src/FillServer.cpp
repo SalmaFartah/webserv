@@ -73,7 +73,7 @@ void FillServer::ListenHandler(std::vector<std::string> values, state)
 		throw std::logic_error("Error: listen: missing value.");
 
 	std::string vl = values[0];
-	int port;
+	size_t port;
 	size_t posColon = vl.find(":");
 	if (posColon == vl.size() - 1)
 		throw std::logic_error("Error: listen: expected `PORT' after `:'");

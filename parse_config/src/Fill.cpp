@@ -168,7 +168,7 @@ void Fill::BodySzHandler(std::vector<std::string> values, state type)
 
 	std::string val = values[0];
 	char *end = NULL;
-	size_t value = std::strtoull(val.c_str(), &end, 10);
+	size_t value = std::strtoul(val.c_str(), &end, 10);
 
 	if (val[0] == '-' || errno == ERANGE || !valid_suffix(*end) \
 	|| (!value && end == val.c_str()) || end[1] \
@@ -282,6 +282,15 @@ void SameServerDup(std::vector<std::pair<std::string, int> > &listen)
 				throw std::logic_error("Error: listen: conflict ip:port `" 
 				+ listen_it->first + ":" + to_string(listen_it->second) 
 				+ "' with `" + iter->first + ":" + to_string(iter->second) + "'");
+			else if (iter == listen_it)
+			{
+				iter = std::find_if(iter + 1, listen.end(), HasPort(listen_it->second));
+				if (iter != listen.end())
+					throw std::logic_error("Error: listen: conflict ip:port `" 
+					+ listen_it->first + ":" + to_string(listen_it->second) 
+					+ "' with `" + iter->first + ":" + to_string(iter->second) + "'");
+			}
+			
 		}
 	}
 }
