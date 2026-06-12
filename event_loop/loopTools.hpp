@@ -10,10 +10,10 @@
 #include <unistd.h>
 #include <poll.h>
 #include <stdbool.h>
-#include "parse_config/inc/parse.hpp"
-#include "parse_config/inc/FillLocation.hpp"
-#include "parse_config/inc/FillServer.hpp"
-#include "parse_request/inc/HttpRequest.hpp"
+#include "../parse_config/inc/parse.hpp"
+#include "../parse_config/inc/FillLocation.hpp"
+#include "../parse_config/inc/FillServer.hpp"
+// #include "../parse_request/inc/HttpRequest.hpp"
 
 #define BUFFER_SZ 200
 
@@ -22,7 +22,7 @@ struct myclients
     std::string clieFile;
     serverConf  *cliConf;
     std::time_t clieTime;
-    HttpRequest request;
+    // HttpRequest request;
 };
 
 
@@ -38,9 +38,8 @@ class loopTools
         loopTools(std::vector<serverConf> servers);
         void mainLoop();
         void newConnection(struct pollfd& server);
-        void existClient(struct pollfd& client, int clieIdx);
+        void existClient(struct pollfd& client, int clieIdx, size_t *idx);
         void close_fds();
-        void incompleteCase();
         ~loopTools();
 };
 

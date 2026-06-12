@@ -21,8 +21,8 @@ class HttpRequest
 		int statePos;
 	public:
 		HttpRequest();
-		enum {INCOMPLETE, DONE, ERROR, ANOTHER} rtype;
-		void parse_request(std::string clieFile, serverConf *clieConf);
+		enum {INCOMPLETE, DONE, ERROR, KEEP_ALIVE} rtype;
+		// void parse_request(std::string clieFile, serverConf *clieConf);
 		std::string method;
 		std::string request_target;
 		std::string query;

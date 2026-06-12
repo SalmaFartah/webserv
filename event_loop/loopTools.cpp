@@ -16,10 +16,12 @@ loopTools::loopTools(std::vector<serverConf> servers) : serv_nb(0)
 		{
 			int serverFd = socket(AF_INET, SOCK_STREAM, 0);
 			if (serverFd < 0)
-				throw std::logic_error("failed socket");
+			{
+				perror("socket: ");
+				throw std::runtime_error("");
+			}
 			serv_nb++;
 			
-
 			sockaddr_in servaddr;
 			// initliaze a fresh struct and avoid any garbage
 			memset(&servaddr, 0, sizeof(servaddr));
@@ -45,7 +47,7 @@ loopTools::loopTools(std::vector<serverConf> servers) : serv_nb(0)
 			{
 				perror("bind: ");
 				close_fds();
-				exit(1);
+				throw std::runtime_error("");
 			}
 			
 		// tells the OS to start queuing incoming connections
@@ -66,11 +68,6 @@ loopTools::loopTools(std::vector<serverConf> servers) : serv_nb(0)
 	
 }
 
-void loopTools::incompleteCase()
-{
-	
-}
-
 void loopTools::newConnection(struct pollfd& server)
 {
 	// handle a client conenction
@@ -78,11 +75,10 @@ void loopTools::newConnection(struct pollfd& server)
 	socklen_t client_len = sizeof(cliaddr);
 
 	int cli_sock = accept(server.fd, (sockaddr *)&cliaddr, &client_len);
-
 	if (cli_sock < 0)
 		perror("accept: ");
-	if (cli_sock >= 0)
-		printf("[SERVER] New connection accepted on FD: %d\n", cli_sock);
+	// if (cli_sock >= 0)
+	// 	printf("[SERVER] New connection accepted on FD: %d\n", cli_sock);
 
 	fcntl(cli_sock, F_SETFL, O_NONBLOCK);
 
@@ -96,42 +92,38 @@ void loopTools::newConnection(struct pollfd& server)
 }
 
 
-void loopTools::existClient(struct pollfd& client, int clieIdx)
+void loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 {
 	char buffer[BUFFER_SZ];
 	ssize_t reading = read(client.fd, buffer, sizeof(buffer) - 1); // our read is non blocking io mean if our kernel buffer is empty read will not frozen here and wait
 	if (reading > 0)
 	{
+		infoClie[clieIdx].clieTime = std::time(NULL);
 		buffer[reading] = '\0';
-		
 		infoClie[clieIdx].clieFile += buffer; // this one accumulate buffer
-		infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf);
+		// infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf);
 		
-		// if (infoClie[clieIdx].request.rtype == 0) // INCOMPLETE
-		// {
-		// 	// set timer overide each time
-		// 	infoClie[clieIdx].clieTime = std::time(NULL);
-		// 	// continue;
-		// 	incompleteCase();
-		// }
-		// else if (infoClie[clieIdx].request.rtype == 3) // THIS case is complete and i must send the file again till done and treate each response
+		// while (infoClie[clieIdx].request.rtype == 3) // THIS case is complete and i must send the file again till done and treate each response
 		// {
 		// 	// the parser will return each request seprately
-
+		// 	infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf);
+		// 	// DONE for each request
+		// }
+		// if (infoClie[clieIdx].request.rtype == 2) // ERROR
+		// {
+			
 		// }
 		
-
-        std::cout << "server read from client " << client.fd << ": " << buffer << std::endl;
+        // std::cout << "server read from client " << client.fd << ": " << buffer << std::endl;
 	}
     else if (reading == 0) // connection closed cleanly by the client (TCP FIN)
 	{
-		std::cout << "client: " << client.fd << " disconnected" << '\n';
+		// std::cout << "client: " << client.fd << " disconnected" << '\n';
 		// std::cout << "MY CLIENT FILES:  \n" << infoClie[clieIdx].clieFile << std::endl;
-		// std::cout << "THIS VECeRase >>>>: " << serv_nb + clieIdx << std::endl;
 		close(client.fd);
 		vecFds.erase(vecFds.begin() + serv_nb + clieIdx);
 		infoClie.erase(infoClie.begin() + clieIdx);
-		// std::cout << "THIS INFOCLIE ERASE >>>>: " << clieIdx << std::endl;
+		(*idx)--;
 	}
 }
 
@@ -139,7 +131,7 @@ void loopTools::mainLoop()
 {
     while (1)
 	{
-		int ready = poll(vecFds.data(), vecFds.size(), -1);
+		int ready = poll(vecFds.data(), vecFds.size(), 1000);
 		if (ready < 0)
 		{
 			perror("poll: ");
@@ -147,33 +139,33 @@ void loopTools::mainLoop()
 		}
 		for (size_t i = 0; i < vecFds.size(); i++)
 		{
-			if (i >= serv_nb && !(vecFds[i].revents) && difftime(std::time(NULL), infoClie[i].clieTime > 30.0))
+			if (i >= serv_nb && !(vecFds[i].revents) && (difftime(std::time(NULL), infoClie[i - serv_nb].clieTime) > 30.0))
 			{
 				// close the connection and fds, and remove this client and continue
+				// std::cout << "diffrenece time " << difftime(std::time(NULL), infoClie[i - serv_nb].clieTime) << "seconds\n";
+				// std::cout << "client " << i - serv_nb << " TIME OUT\n";
+				close(i - serv_nb);
+				infoClie.erase(infoClie.begin() + (i - serv_nb));
+				vecFds.erase(vecFds.begin() + i);
+				// Note: --NO RESPONSE YET--
 				continue;
 			}
 			else if (i < serv_nb  && vecFds[i].revents & POLLIN) // new connection arrived
 			{
 				// handle a client conenction
-				newConnection(vecFds[i]);
-				// new client file and config
-				// aboutClient()
 				myclients newClient;
-
-				newClient.cliConf = linkServConf[vecFds[i].fd];
 				// start count time of a client
 				newClient.clieTime = std::time(NULL);
-				//
+				newConnection(vecFds[i]);
+				// new client file and config
+				newClient.cliConf = linkServConf[vecFds[i].fd];
 				infoClie.push_back(newClient);
 			}
 			else if (vecFds[i].revents & POLLIN) // a client want to do smth
 			{
 				// handle this data on existing client
-				int clieIdx = i - serv_nb;
-				size_t tmp = vecFds.size();
-				existClient(vecFds[i], clieIdx);
-				if (tmp != vecFds.size()) // if a client disco
-					i--;
+				existClient(vecFds[i], i - serv_nb, &i);
+				
 			}
 		}
 	}
