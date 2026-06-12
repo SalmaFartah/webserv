@@ -1,18 +1,34 @@
+#include "parse_config/inc/parse.hpp"
+#include "parse_config/inc/FillLocation.hpp"
+#include "parse_config/inc/FillServer.hpp"
 #include "loopTools.hpp"
+
 
 int main(int ac, char *av[])
 {
     if (ac > 2)
         return std::cerr << "Error: Bad Argument" << std::endl, 1;
-    std::ifstream Fileconf("test.conf");
+    std::ifstream Fileconf;
     if (ac == 2)
-    	std::ifstream Fileconf(av[1]);
+	    Fileconf.open(av[1]);
+    else
+	    Fileconf.open("nginx.conf");
 	if (!Fileconf)
 		return std::cerr << "Error: could not open file" << std::endl, 1;
 	// if the file founded with the right permission above;
 	// ------------------------------------------------------------------
 	conf confObj;
 	confObj.read_file(Fileconf);
+	try
+	{
+		std::vector<serverConf> servers = parseConfig(confObj.getTokenz());
+		// print_config(servers);
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+	
 	// i must read all the file and tooks all the values as tokenz except whitesapces and comments;
 	// --------------------------------------------------------------------------------------------
 
@@ -22,15 +38,15 @@ int main(int ac, char *av[])
 
 	/*#################--EVENT LOOP--######################*/
 
-	try
-	{
-		loopTools lp;
-		lp.mainLoop();
-	}
-	catch(const std::exception& e)
-	{
-		std::cerr << e.what() << '\n';
-	}
+	// try
+	// {
+	// 	loopTools lp;
+	// 	lp.mainLoop();
+	// }
+	// catch(const std::exception& e)
+	// {
+	// 	std::cerr << e.what() << '\n';
+	// }
 	
 	
 }

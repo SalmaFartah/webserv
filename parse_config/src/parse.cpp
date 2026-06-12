@@ -1,4 +1,4 @@
-#include "parse.hpp"
+#include "../inc/parse.hpp"
 
 conf::conf() {};
 conf::~conf() {};
@@ -41,4 +41,9 @@ void conf::read_file(std::ifstream& conf)
             fillWords(conf, c);
     }
 
+}
+
+std::vector<std::pair<tokenType, std::string> > conf::getTokenz() const
+{
+    return vecToken;
 }
