@@ -1,4 +1,4 @@
-#include "../include/FillServer.hpp"
+#include "../inc/FillServer.hpp"
 #include <cstring>
 
 FillServer::FillServer()
@@ -71,8 +71,9 @@ void FillServer::ListenHandler(std::vector<std::string> values, state)
 		throw std::logic_error("Error: listen: too many values.");
 	if (values.size() < 1)
 		throw std::logic_error("Error: listen: missing value.");
+
 	std::string vl = values[0];
-	int port;
+	size_t port;
 	size_t posColon = vl.find(":");
 	if (posColon == vl.size() - 1)
 		throw std::logic_error("Error: listen: expected `PORT' after `:'");
@@ -85,8 +86,16 @@ void FillServer::ListenHandler(std::vector<std::string> values, state)
 			vl = resolveHost();
 		if (valid_ip(vl)) // if it is jst ip 127.0.0.1
 			server.listen.push_back(std::make_pair(vl, 80));
-		else if (str_digit(vl) && (port = atoi(vl.c_str())) >= 1 && port <= 65535) // if it is port 8080
+		else if (str_digit(vl)) // if it is port 8080
+		{
+			if (vl[0] == '0')
+				throw std::logic_error("Error: listen: invalid port.");
+			char *end;
+			port = strtol(vl.c_str(), &end, 10);
+			if (errno == ERANGE)
+				throw std::logic_error("Error: listen: port out of range.");
 			server.listen.push_back(std::make_pair("0.0.0.0", port));
+		}
 		else
 			throw std::logic_error("Error: listen: invalid address format.");
 	}
@@ -100,10 +109,11 @@ void FillServer::ListenHandler(std::vector<std::string> values, state)
 			ip = resolveHost();
 		if (!valid_ip(ip))
 			throw std::logic_error("Error: listen: invalid IP address: `" + ip + "'");
-		if (!str_digit(portstr))
+		if (portstr[0] == '0' || !str_digit(portstr))
 			throw std::logic_error("Error: listen: invalid port.");
-		port = atoi(portstr.c_str());
-		if (port < 1 && port > 65535)
+		char *end;
+		port = strtol(portstr.c_str(), &end, 10);
+		if (errno == ERANGE || port < 1 || port > 65535)
 			throw std::logic_error("Error: listen: port out of range.");
 
 		server.listen.push_back(std::make_pair(ip, port));

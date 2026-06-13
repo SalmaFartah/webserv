@@ -9,9 +9,20 @@
 #include <set>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include "../tokenz/parse.hpp"
+#include <algorithm>
+#include "parse.hpp"
 
 enum state { LOCATION, SERVER };
+
+struct HasPort
+{
+    int port;
+    HasPort(int p) : port(p) {}
+    bool operator()(const std::pair<std::string, int>& p) const
+    {
+        return p.second == port;
+    }
+};
 
 typedef struct locationConf
 {
@@ -29,7 +40,7 @@ typedef struct locationConf
     std::string cgi_extension; // script extension: .php/.py/.pl
     std::string cgi_pass; // the executer that will run the script
     bool defaultm;
-    locationConf()
+    locationConf() // CHECK THIS LATER
     {
         methods.insert("GET");
         methods.insert("POST");
@@ -55,10 +66,18 @@ typedef struct serverConf
     bool defaulti;
     serverConf()
     {
+        defaults = true;
+        defaulti = true;
         body_size = 1048576;
         listen.push_back(std::make_pair("0.0.0.0", 80));
         index.push_back("index.html");
-        // err_page[400] 
+        error_page[400] = "<html><body><h1>400 Bad Request</h1></body></html>";
+        error_page[403] = "<html><body><h1>403 Forbidden</h1></body></html>";
+        error_page[404] = "<html><body><h1>404 Not Found</h1></body></html>";
+        error_page[405] = "<html><body><h1>405 Method Not Allowed</h1></body></html>";
+        error_page[413] = "<html><body><h1>413 Content Too Large</h1></body></html>";
+        error_page[500] = "<html><body><h1>500 Internal Server Error</h1></body></html>";
+        error_page[501] = "<html><body><h1>501 Not Implemented</h1></body></html>";
         autoindex = false;
     };
 }   serverConf;
@@ -78,6 +97,9 @@ class Fill
 		Fill();
 	    serverConf server;
 		locationConf location;
-		~Fill();
+		virtual ~Fill();
 };
 
+void print_config(std::vector<serverConf> conf);
+void checkPortConflict(std::vector<serverConf>);
+std::string to_string(int val);

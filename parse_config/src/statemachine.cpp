@@ -1,4 +1,6 @@
-#include "../include/FillServer.hpp"
+#include "../inc/FillServer.hpp"
+#include "../inc/FillLocation.hpp"
+#include "../inc/parse.hpp"
 #include <map>
 #include <vector>
 #include <string>
@@ -21,6 +23,7 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 	serverConf currentServer;
 	locationConf currentLocation;
 	FillServer filler;
+	FillLocation fill;
 
 	// required directives tracker
 	std::map<std::string, bool> required;
@@ -48,9 +51,9 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 
 				required.clear();
 
-				required["location"] = false;
-				required["listen"] = false;
-				required["host"] = false;
+				// required["location"] = false;
+				// required["listen"] = false;
+				// required["host"] = false;
 				required["root"] = false;
 
 				state = IN_SERVER;
@@ -157,7 +160,6 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 				if (type == CLOSED_BC)
 				{
 					currentServer.locations.push_back(currentLocation);
-
 					state = IN_SERVER;
 					pos++;
 				}
@@ -165,11 +167,11 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 				// location directives
 				else if (type == WORD)
 				{
-					filler.location = currentLocation;
+					fill.location = currentLocation;
 
-    				filler.fillLocation(tokens, pos);
+    				fill.LocationFiller(tokens, pos);
 
-					currentLocation = filler.location;
+					currentLocation = fill.location;
 				}
 
 				else
@@ -183,6 +185,6 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 
 	if (state != GLOBAL)
 		throw std::runtime_error("Unclosed block at end of file");
-
+	checkPortConflict(servers);
 	return servers;
 }

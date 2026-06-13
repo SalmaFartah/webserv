@@ -1,4 +1,4 @@
-#include "parse.hpp"
+#include "../inc/parse.hpp"
 
 conf::conf() {};
 conf::~conf() {};
@@ -43,11 +43,7 @@ void conf::read_file(std::ifstream& conf)
 
 }
 
-// void conf::print_tokenz()
-// {
-//     for (size_t i = 0; i < vecToken.size(); i++)
-//     {
-//         std::cout << "TYPE: " << vecToken[i].first << " VALUE: " << vecToken[i].second << std::endl;       
-//     }
-    
-// }
+std::vector<std::pair<tokenType, std::string> > conf::getTokenz() const
+{
+    return vecToken;
+}
