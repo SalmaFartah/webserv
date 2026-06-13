@@ -2,6 +2,8 @@
 
 int main()
 {
+	serverConf conf;
+	conf.body_size = 45;
 	HttpRequest req;
-	req.parse_request("GET /search HTTP/1.1\r\nHost:h\r\ncontent-length: +12\r\nconnection: keep-alive\r\n\r\n");
+	req.parse_request("POST /upload HTTP/1.1\r\nHost: example.com\r\nTransfer-Encoding: chunked\r\nContent-Type: text/plain\r\n\r\n30\r\n\r\n", &conf);
 }

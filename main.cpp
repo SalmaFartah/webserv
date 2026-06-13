@@ -5,9 +5,11 @@ int main(int ac, char *av[])
 {
     if (ac > 2)
         return std::cerr << "Error: Bad Argument" << std::endl, 1;
-    std::ifstream Fileconf("nginx.conf");
+    std::ifstream Fileconf;
     if (ac == 2)
-    	std::ifstream Fileconf(av[1]);
+	    Fileconf.open(av[1]);
+    else
+	    Fileconf.open("nginx.conf");
 	if (!Fileconf)
 		return std::cerr << "Error: could not open file" << std::endl, 1;
 	// if the file founded with the right permission above;

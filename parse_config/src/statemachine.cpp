@@ -75,6 +75,20 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 						}
 					}
 
+					for (size_t i = 0; i < currentServer.locations.size(); i++)
+					{
+						locationConf &loc = currentServer.locations[i];
+
+						if (loc.root.empty() && !currentServer.root.empty())
+							loc.root = currentServer.root;
+						if (loc.index.empty() && !currentServer.index.empty())
+							loc.index = currentServer.index;
+						if (!loc.autoindex_set)
+							loc.autoindex = currentServer.autoindex;
+						if (!loc.body_size_set)
+							loc.body_size = currentServer.body_size;
+					}
+
 					servers.push_back(currentServer);
 
 					state = GLOBAL;
@@ -171,6 +185,6 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 
 	if (state != GLOBAL)
 		throw std::runtime_error("Unclosed block at end of file");
-
+	checkPortConflict(servers);
 	return servers;
 }
