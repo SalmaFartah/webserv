@@ -1,5 +1,4 @@
 #pragma once
-
 #include <string>
 #include <map>
 #include <iostream>
@@ -9,6 +8,7 @@
 #include <algorithm>
 #include "../../parse_config/inc/FillServer.hpp"
 #include "../../parse_config/inc/FillLocation.hpp"
+
 
 class HttpRequest
 {
