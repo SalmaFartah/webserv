@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include "../parse_config/inc/parse.hpp"
 #include "../parse_config/inc/FillLocation.hpp"
+#include <cstring>
 #include "../parse_config/inc/FillServer.hpp"
 // #include "../parse_request/inc/HttpRequest.hpp"
 

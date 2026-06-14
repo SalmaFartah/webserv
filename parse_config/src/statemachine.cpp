@@ -51,9 +51,7 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 
 				required.clear();
 
-				// required["location"] = false;
-				// required["listen"] = false;
-				// required["host"] = false;
+				required["location"] = false;
 				required["root"] = false;
 
 				state = IN_SERVER;
@@ -83,6 +81,8 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 							loc.root = currentServer.root;
 						if (loc.index.empty() && !currentServer.index.empty())
 							loc.index = currentServer.index;
+						if (loc.error_page.empty() && !currentServer.error_page.empty())
+							loc.error_page = currentServer.error_page;
 						if (!loc.autoindex_set)
 							loc.autoindex = currentServer.autoindex;
 						if (!loc.body_size_set)
