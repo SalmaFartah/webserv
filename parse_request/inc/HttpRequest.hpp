@@ -35,7 +35,6 @@ class HttpRequest
 		bool invalid_value(std::string);
 		size_t get_size(std::string, size_t, size_t);
 		bool parse_body(size_t, std::string, serverConf *);
-		void one_request(std::string, serverConf *);
 	public:
 		HttpRequest();
 		int errorCode;
