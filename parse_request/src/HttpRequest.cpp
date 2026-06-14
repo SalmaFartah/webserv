@@ -54,7 +54,7 @@ bool HttpRequest::invalid_value(std::string value)
 {
 	errno = 0;
 	char *end = NULL;
-	size_t holder = strtoul(value.c_str(), &end, 10);
+	strtoul(value.c_str(), &end, 10);
 	if (value[0] == '-' || value[0] == '+' || errno == ERANGE || *end)
 		return true;
 	return false;
@@ -66,7 +66,6 @@ bool HttpRequest::parse_headers()
 	size_t eofLine;
 	size_t colon;
 	std::string line;
-	int i = 0;
 	while (startLine < header.size())
 	{
 		eofLine = header.find("\r\n", startLine);
@@ -124,6 +123,7 @@ size_t HttpRequest::get_size(std::string bodyreq, size_t start, size_t end)
 
 bool HttpRequest::parse_body(size_t bodystrat, std::string request, serverConf *conf)
 {
+	(void)conf;
 	if (bodyType == NORMAL)
 	{
 		char *end = NULL;
