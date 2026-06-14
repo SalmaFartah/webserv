@@ -9,31 +9,38 @@
 #include <algorithm>
 #include "../../parse_config/inc/FillServer.hpp"
 #include "../../parse_config/inc/FillLocation.hpp"
-
+#define MAX_URI_LENGTH 8192
 class HttpRequest
 {
-		bool isprintSTR(std::string);
-		std::string requestLine;
-		bool parse_requestLine();
-		std::string header;
-		bool parse_headers();
-		void extract_query();
-		bool invalid_value(std::string);
-		bool parse_body(size_t, std::string, serverConf *);
-		int errorCode;
-		enum {CHUNKED, NORMAL} bodyType;
-		enum {INHEADER, INBODY} parseState;
-		bool keepAlive;
 		std::string method;
 		std::string request_target;
 		std::string query;
 		std::string httpVersion;
 		std::map<std::string, std::string> headers;
 		std::string body;
+
+		std::string requestLine;
+		std::string header;
+
+		enum {CHUNKED, NORMAL, NONE} bodyType;
+		enum {INHEADER, INBODY} parseState;
+		enum {INSIZE, IN_CHUNK, THE_END} bodyState;
+		bool keepAlive;
 		size_t body_size;
+		size_t current_pos;
+
+		bool isprintSTR(std::string);
+		bool parse_requestLine();
+		bool parse_headers();
+		void extract_query();
+		bool invalid_value(std::string);
+		size_t get_size(std::string, size_t, size_t);
+		bool parse_body(size_t, std::string, serverConf *);
+		void one_request(std::string, serverConf *);
 	public:
 		HttpRequest();
-		enum {INCOMPLETE, DONE, ERROR, ANOTHER} rtype;
+		int errorCode;
+		enum {INCOMPLETE, DONE, ERROR, KEEP_ALIVE} rtype;
 		void parse_request(std::string, serverConf *);
 		~HttpRequest();
 };
