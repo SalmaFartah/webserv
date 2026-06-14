@@ -52,7 +52,6 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 				required.clear();
 
 				required["location"] = false;
-				required["root"] = false;
 
 				state = IN_SERVER;
 				break;
@@ -70,6 +69,16 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 						{
 							throw std::runtime_error(
 								"Missing required directive: " + it->first);
+						}
+					}
+
+					if (currentServer.root.empty())
+					{
+						for (size_t i = 0; i < currentServer.locations.size(); i++)
+						{
+							if (currentServer.locations[i].root.empty())
+								throw std::runtime_error(
+									"Missing required directive: root");
 						}
 					}
 
