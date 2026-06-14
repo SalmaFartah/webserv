@@ -51,10 +51,7 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 
 				required.clear();
 
-				// required["location"] = false;
-				// required["listen"] = false;
-				// required["host"] = false;
-				required["root"] = false;
+				required["location"] = false;
 
 				state = IN_SERVER;
 				break;
@@ -75,6 +72,16 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 						}
 					}
 
+					if (currentServer.root.empty())
+					{
+						for (size_t i = 0; i < currentServer.locations.size(); i++)
+						{
+							if (currentServer.locations[i].root.empty())
+								throw std::runtime_error(
+									"Missing required directive: root");
+						}
+					}
+
 					for (size_t i = 0; i < currentServer.locations.size(); i++)
 					{
 						locationConf &loc = currentServer.locations[i];
@@ -83,6 +90,8 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 							loc.root = currentServer.root;
 						if (loc.index.empty() && !currentServer.index.empty())
 							loc.index = currentServer.index;
+						if (loc.error_page.empty() && !currentServer.error_page.empty())
+							loc.error_page = currentServer.error_page;
 						if (!loc.autoindex_set)
 							loc.autoindex = currentServer.autoindex;
 						if (!loc.body_size_set)
