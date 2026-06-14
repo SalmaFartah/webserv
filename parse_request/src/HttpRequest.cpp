@@ -26,8 +26,6 @@ bool HttpRequest::parse_requestLine()
 	&& request_target.size() <= MAX_URI_LENGTH)
 		return extract_query(), true;
 	errorCode = 400;
-	if (request_target.size() > MAX_URI_LENGTH)
-		errorCode = 413;
 	return rtype = ERROR, false;
 }
 
