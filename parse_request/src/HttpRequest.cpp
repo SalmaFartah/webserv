@@ -16,14 +16,14 @@ bool HttpRequest::parse_requestLine()
 		return rtype = ERROR, errorCode = 400, false;
 
 	//********** EXTRACT METHOD, TARGETA AND VERSION ************//
-	method = segments[0];
-	request_target = segments[1];
-	httpVersion = segments[2];
+	req.method = segments[0];
+	req.request_target = segments[1];
+	req.httpVersion = segments[2];
 
 	//******** CHECK IF METHOD, TARGET AND VERSION ARE VALID *****//
-	if ((method == "GET" || method == "POST" || method == "DELETE") \
-	&& request_target.find("/") == 0 && httpVersion == "HTTP/1.1"
-	&& request_target.size() <= MAX_URI_LENGTH)
+	if ((req.method == "GET" || req.method == "POST" || req.method == "DELETE") \
+	&& req.request_target.find("/") == 0 && req.httpVersion == "HTTP/1.1"
+	&& req.request_target.size() <= MAX_URI_LENGTH)
 		return extract_query(), true;
 	errorCode = 400;
 	return rtype = ERROR, false;
@@ -32,11 +32,11 @@ bool HttpRequest::parse_requestLine()
 
 void HttpRequest::extract_query()
 {
-	size_t pos = request_target.find("?");
+	size_t pos = req.request_target.find("?");
 	if (pos != std::string::npos)
 	{
-		query = request_target.substr(pos + 1, request_target.size());
-		request_target = request_target.substr(0, pos);
+		req.query = req.request_target.substr(pos + 1, req.request_target.size());
+		req.request_target = req.request_target.substr(0, pos);
 	}
 }
 
@@ -86,10 +86,10 @@ bool HttpRequest::parse_headers()
 		// trim spaces from start and end of value
 		value = value.substr(value.find_first_not_of(" \t"), value.find_last_not_of(" \t") - value.find_first_not_of(" \t") + 1);
 
-		if ((key == "host" && (headers.count("host") || value.empty()))
-		|| (key == "content-length" && (headers.count("content-length") || invalid_value(value)))
-		|| (key == "transfer-encoding" && (value != "chunked" || headers.count("transfer-encoding")))
-		|| (key == "content-Type" && headers.count("content-Type")))
+		if ((key == "host" && (req.headers.count("host") || value.empty()))
+		|| (key == "content-length" && (req.headers.count("content-length") || invalid_value(value)))
+		|| (key == "transfer-encoding" && (value != "chunked" || req.headers.count("transfer-encoding")))
+		|| (key == "content-Type" && req.headers.count("content-Type")))
 			return false;
 		if (key == "content-length")
 			bodyType = NORMAL;
@@ -97,11 +97,11 @@ bool HttpRequest::parse_headers()
 			bodyType = CHUNKED;
 		if (key == "connection" && value == "close")
 			keepAlive = false;
-		headers[key] = value;
+		req.headers[key] = value;
 		startLine = eofLine + 2;
 	}
-	if (!headers.count("host") \
-	|| (headers.count("content-length") && headers.count("transfer-encoding")))
+	if (!req.headers.count("host") \
+	|| (req.headers.count("content-length") && req.headers.count("transfer-encoding")))
 		return false;
 	return true;
 }
@@ -127,13 +127,13 @@ bool HttpRequest::parse_body(size_t bodystrat, std::string request, serverConf *
 	if (bodyType == NORMAL)
 	{
 		char *end = NULL;
-		body_size = strtoul(headers["content-length"].c_str(), &end, 10);
-		body = request.substr(bodystrat);
-		if (body.size() < body_size)
+		body_size = strtoul(req.headers["content-length"].c_str(), &end, 10);
+		req.body = request.substr(bodystrat);
+		if (req.body.size() < body_size)
 			return rtype = INCOMPLETE, false;
-		if (body.size() > body_size && keepAlive)
+		if (req.body.size() > body_size && keepAlive)
 			rtype = KEEP_ALIVE;
-		body = body.substr(0, body_size);
+		req.body = req.body.substr(0, body_size);
 		parseState = INHEADER;
 		current_pos += bodystrat + body_size;
 	}
@@ -167,7 +167,7 @@ bool HttpRequest::parse_body(size_t bodystrat, std::string request, serverConf *
 				chunk = bodyreq.substr(pos1, pos2 - pos1);
 				if (chunk.size() != size)
 					return errorCode = 400, rtype = ERROR, false;
-				body += chunk;
+				req.body += chunk;
 				pos1 = pos2 + 2;
 				bodyState = INSIZE;
 				std::cout << "chunk: [" << chunk << "]\n";
@@ -230,6 +230,7 @@ void HttpRequest::parse_request(std::string request, serverConf *conf)
 			std::cout << "INCOMPLETE\n";
 		return ;
 	}
+	std::cout << "DONE: body: [" << req.body << "]\n";
 }
 
 HttpRequest::HttpRequest()
