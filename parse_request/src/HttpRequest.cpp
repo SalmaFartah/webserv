@@ -131,10 +131,11 @@ bool HttpRequest::parse_body(size_t bodystrat, std::string request, serverConf *
 		req.body = request.substr(bodystrat);
 		if (req.body.size() < body_size)
 			return rtype = INCOMPLETE, false;
-		if (req.body.size() > body_size && keepAlive)
-			rtype = KEEP_ALIVE;
+		if (!keepAlive)
+			rtype = DONE;
 		req.body = req.body.substr(0, body_size);
 		parseState = INHEADER;
+		bodyType = NONE;
 		current_pos += bodystrat + body_size;
 	}
 	else if (bodyType == CHUNKED)
@@ -179,10 +180,12 @@ bool HttpRequest::parse_body(size_t bodystrat, std::string request, serverConf *
 					return rtype = INCOMPLETE, false;
 				if (str.size() >= 4 && str.find("\r\n\r\n"))
 					return errorCode = 400, rtype = ERROR, false;
-				if (str.size() > 4)
-					rtype = KEEP_ALIVE;
+				if (!keepAlive)
+					rtype = DONE;
 				current_pos += bodystrat + pos1 + 4;
 				parseState = INHEADER;
+				bodyState = INSIZE;
+				bodyType = NONE;
 				return true;
 			}
 			pos0 = pos1;
@@ -221,7 +224,7 @@ void HttpRequest::parse_request(std::string request, serverConf *conf)
 		}
 		parseState = INBODY;
 	}
-	rtype = DONE;
+	rtype = KEEP_ALIVE;
 	if (!parse_body(HeaderEnd + 4, request, conf))
 	{
 		if (rtype == ERROR)
