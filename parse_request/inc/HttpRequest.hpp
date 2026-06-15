@@ -47,6 +47,15 @@ class HttpRequest
 		int errorCode;
 		enum {INCOMPLETE, DONE, ERROR, KEEP_ALIVE} rtype;
 		void parse_request(std::string, serverConf *);
+		
+		// Getters to access parsed request data
+		std::string getMethod() const;
+		std::string getTarget() const;
+		std::string getQuery() const;
+		std::string getBody() const;
+		std::string getHeader(const std::string& key) const;
+		std::map<std::string, std::string> getAllHeaders() const;
+		size_t getBodySize() const;
 
 		~HttpRequest();
 };
