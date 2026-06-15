@@ -50,6 +50,13 @@ typedef struct locationConf
         body_size = 0;
         body_size_set = false;
         defaultm = true;
+        error_page[400] = "<html><body><h1>400 Bad Request</h1></body></html>";
+        error_page[403] = "<html><body><h1>403 Forbidden</h1></body></html>";
+        error_page[404] = "<html><body><h1>404 Not Found</h1></body></html>";
+        error_page[405] = "<html><body><h1>405 Method Not Allowed</h1></body></html>";
+        error_page[413] = "<html><body><h1>413 Content Too Large</h1></body></html>";
+        error_page[500] = "<html><body><h1>500 Internal Server Error</h1></body></html>";
+        error_page[501] = "<html><body><h1>501 Not Implemented</h1></body></html>";
     };
 }   locationConf;
 
