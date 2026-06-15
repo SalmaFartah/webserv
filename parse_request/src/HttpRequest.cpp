@@ -25,8 +25,7 @@ bool HttpRequest::parse_requestLine()
 	&& req.request_target.find("/") == 0 && req.httpVersion == "HTTP/1.1"
 	&& req.request_target.size() <= MAX_URI_LENGTH)
 		return extract_query(), true;
-	errorCode = 400;
-	return rtype = ERROR, false;
+	return errorCode = 400, rtype = ERROR, false;
 }
 
 
@@ -66,6 +65,7 @@ bool HttpRequest::parse_headers()
 	size_t eofLine;
 	size_t colon;
 	std::string line;
+	std::cout << "IN PARSE HEADER\n";
 	while (startLine < header.size())
 	{
 		eofLine = header.find("\r\n", startLine);
@@ -84,8 +84,9 @@ bool HttpRequest::parse_headers()
 		if ((!isprintSTR(value) && value.find("\t") == std::string::npos))
 			return false;
 		// trim spaces from start and end of value
-		value = value.substr(value.find_first_not_of(" \t"), value.find_last_not_of(" \t") - value.find_first_not_of(" \t") + 1);
-
+		if (!value.empty())
+			value = value.substr(value.find_first_not_of(" \t"), value.find_last_not_of(" \t") - value.find_first_not_of(" \t") + 1);
+		std::cout << "key: [" << key << "] value: [" << value << "]\n";
 		if ((key == "host" && (req.headers.count("host") || value.empty()))
 		|| (key == "content-length" && (req.headers.count("content-length") || invalid_value(value)))
 		|| (key == "transfer-encoding" && (value != "chunked" || req.headers.count("transfer-encoding")))
@@ -213,11 +214,16 @@ void HttpRequest::parse_request(std::string request, serverConf *conf)
 		HeaderBegin = request.find("\r\n");
 		requestLine = request.substr(0, HeaderBegin);
 		if (!parse_requestLine())
+		{
+			std::cerr << "ERROR REQUEST LINE\n";
 			return ; // should return a responce with error page
+		}
+		std::cout << "method: [" << req.method << "]\nrequest target: [" << req.request_target << "]\nhttp version: [" << req.httpVersion << "]\n";
 		HeaderBegin += 2;
 		header = request.substr(HeaderBegin, HeaderEnd - HeaderBegin + 2);
 		if (!header.size() || !parse_headers())
 		{
+			std::cerr << "ERROR HEADER\n";
 			rtype = ERROR;
 			errorCode = 400;
 			return ;
@@ -233,7 +239,7 @@ void HttpRequest::parse_request(std::string request, serverConf *conf)
 			std::cout << "INCOMPLETE\n";
 		return ;
 	}
-	std::cout << "DONE: body: [" << req.body << "]\n";
+	std::cout << "body: [" << req.body << "]\n";
 }
 
 HttpRequest::HttpRequest()
