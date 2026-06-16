@@ -239,11 +239,14 @@ void HttpRequest::parse_request(std::string request, serverConf *conf)
 			std::cout << "INCOMPLETE\n";
 		return ;
 	}
+	// should build response before clear the headers map
+	req.headers.clear();
 	std::cout << "body: [" << req.body << "]\n";
 }
 
 HttpRequest::HttpRequest()
 {
+	rtype = INCOMPLETE;
 	current_pos = 0;
 	bodyType = NONE;
 	bodyState = INSIZE;
