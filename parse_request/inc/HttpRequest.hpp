@@ -23,6 +23,7 @@ typedef struct
 
 class HttpRequest
 {
+		typedef std::map<std::string, std::string> headerMap;
 		ReqContent req;
 
 		std::string requestLine;
@@ -38,11 +39,14 @@ class HttpRequest
 		bool isprintSTR(std::string);
 		bool parse_requestLine();
 		bool parse_headers();
+		bool get_key(std::string&, const std::string&, size_t);
+		bool get_value(std::string&, const std::string&, size_t);
 		void extract_query();
 		bool invalid_value(std::string);
 		size_t get_size(std::string, size_t, size_t);
 		bool parse_body(size_t, std::string);
 		bool handle_chunked(std::string);
+		bool store_header(const std::string&, const std::string&, headerMap&);
 	public:
 		HttpRequest();
 		int errorCode;
