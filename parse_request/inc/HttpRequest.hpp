@@ -41,12 +41,12 @@ class HttpRequest
 		void extract_query();
 		bool invalid_value(std::string);
 		size_t get_size(std::string, size_t, size_t);
-		bool parse_body(size_t, std::string, serverConf *);
+		bool parse_body(size_t, std::string);
+		bool handle_chunked(std::string);
 	public:
 		HttpRequest();
 		int errorCode;
 		enum {INCOMPLETE, DONE, ERROR, KEEP_ALIVE} rtype;
 		void parse_request(std::string, serverConf *);
-
 		~HttpRequest();
 };
