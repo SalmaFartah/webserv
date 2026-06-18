@@ -25,8 +25,7 @@ bool HttpRequest::parse_requestLine()
 	&& req.request_target.find("/") == 0 && req.httpVersion == "HTTP/1.1"
 	&& req.request_target.size() <= MAX_URI_LENGTH)
 		return extract_query(), true;
-	errorCode = 400;
-	return rtype = ERROR, false;
+	return errorCode = 400, rtype = ERROR, false;
 }
 
 
@@ -54,7 +53,7 @@ bool HttpRequest::invalid_value(std::string value)
 {
 	errno = 0;
 	char *end = NULL;
-	strtoul(value.c_str(), &end, 10);
+	body_size = strtoul(value.c_str(), &end, 10);
 	if (value[0] == '-' || value[0] == '+' || errno == ERANGE || *end)
 		return true;
 	return false;
@@ -66,6 +65,7 @@ bool HttpRequest::parse_headers()
 	size_t eofLine;
 	size_t colon;
 	std::string line;
+	std::cout << "IN PARSE HEADER\n";
 	while (startLine < header.size())
 	{
 		eofLine = header.find("\r\n", startLine);
@@ -84,8 +84,11 @@ bool HttpRequest::parse_headers()
 		if ((!isprintSTR(value) && value.find("\t") == std::string::npos))
 			return false;
 		// trim spaces from start and end of value
-		value = value.substr(value.find_first_not_of(" \t"), value.find_last_not_of(" \t") - value.find_first_not_of(" \t") + 1);
-
+		if (value.find_first_not_of(" \t") == std::string::npos)
+			value = "";
+		if (!value.empty())
+			value = value.substr(value.find_first_not_of(" \t"), value.find_last_not_of(" \t") - value.find_first_not_of(" \t") + 1);
+		std::cout << "key: [" << key << "] value: [" << value << "]\n";
 		if ((key == "host" && (req.headers.count("host") || value.empty()))
 		|| (key == "content-length" && (req.headers.count("content-length") || invalid_value(value)))
 		|| (key == "transfer-encoding" && (value != "chunked" || req.headers.count("transfer-encoding")))
@@ -121,29 +124,10 @@ size_t HttpRequest::get_size(std::string bodyreq, size_t start, size_t end)
 	return size;
 }
 
-bool HttpRequest::parse_body(size_t bodystrat, std::string request, serverConf *conf)
+bool HttpRequest::handle_chunked(std::string bodyreq)
 {
-	(void)conf;
-	if (bodyType == NORMAL)
-	{
-		char *end = NULL;
-		body_size = strtoul(req.headers["content-length"].c_str(), &end, 10);
-		req.body = request.substr(bodystrat);
-		if (req.body.size() < body_size)
-			return rtype = INCOMPLETE, false;
-		if (!keepAlive)
-			rtype = DONE;
-		req.body = req.body.substr(0, body_size);
-		parseState = INHEADER;
-		bodyType = NONE;
-		current_pos += bodystrat + body_size;
-	}
-	else if (bodyType == CHUNKED)
-	{
-		std::string bodyreq = request.substr(bodystrat);
-		static size_t pos0;
-		size_t pos1 = 0;
-		size_t pos2;
+		static size_t pos0 = 0;
+		size_t pos1 = 0, pos2;
 		static size_t size = 0;
 		std::string chunk;
 		while (1)
@@ -154,10 +138,8 @@ bool HttpRequest::parse_body(size_t bodystrat, std::string request, serverConf *
 				if (pos1 == std::string::npos)
 					return rtype = INCOMPLETE, false;
 				bodyState = IN_CHUNK;
-				size = get_size(bodyreq, pos0, pos1);
-				std::cout << "[" << size << "]" << std::endl;
-				if (size == 0)
-					return false;
+				if ((size = get_size(bodyreq, pos0, pos1)) == 0)
+					return rtype = ERROR, errorCode = 400, false;
 			}
 			if (bodyState == IN_CHUNK)
 			{
@@ -171,7 +153,6 @@ bool HttpRequest::parse_body(size_t bodystrat, std::string request, serverConf *
 				req.body += chunk;
 				pos1 = pos2 + 2;
 				bodyState = INSIZE;
-				std::cout << "chunk: [" << chunk << "]\n";
 			}
 			if (bodyState == THE_END)
 			{
@@ -182,21 +163,38 @@ bool HttpRequest::parse_body(size_t bodystrat, std::string request, serverConf *
 					return errorCode = 400, rtype = ERROR, false;
 				if (!keepAlive)
 					rtype = DONE;
-				current_pos += bodystrat + pos1 + 4;
-				parseState = INHEADER;
+				current_pos += pos1 + 4;
 				bodyState = INSIZE;
 				bodyType = NONE;
 				return true;
 			}
 			pos0 = pos1;
 		}
-	}	
+}
+
+bool HttpRequest::parse_body(size_t bodyStart, std::string request)
+{
+	current_pos += bodyStart;
+	// checking the body length with the client max body size is after determining which location belong the request
+	if (bodyType == NORMAL)
+	{
+		req.body = request.substr(bodyStart);
+		if (req.body.size() < body_size)
+			return rtype = INCOMPLETE, false;
+		if (!keepAlive)
+			rtype = DONE;
+		req.body = req.body.substr(0, body_size);
+		bodyType = NONE;
+		current_pos += body_size;
+	}
+	else if (bodyType == CHUNKED && !handle_chunked(request.substr(bodyStart)))
+		return false;
 	return true;
 }
 
 void HttpRequest::parse_request(std::string request, serverConf *conf)
 {
-
+	(void)conf;
 	request = request.substr(current_pos);
 	static size_t HeaderEnd;
 	static size_t HeaderBegin;
@@ -213,11 +211,16 @@ void HttpRequest::parse_request(std::string request, serverConf *conf)
 		HeaderBegin = request.find("\r\n");
 		requestLine = request.substr(0, HeaderBegin);
 		if (!parse_requestLine())
+		{
+			std::cerr << "ERROR REQUEST LINE\n";
 			return ; // should return a responce with error page
+		}
+		// std::cout << "method: [" << req.method << "]\nrequest target: [" << req.request_target << "]\nhttp version: [" << req.httpVersion << "]\n";
 		HeaderBegin += 2;
 		header = request.substr(HeaderBegin, HeaderEnd - HeaderBegin + 2);
 		if (!header.size() || !parse_headers())
 		{
+			std::cerr << "ERROR HEADER\n";
 			rtype = ERROR;
 			errorCode = 400;
 			return ;
@@ -225,7 +228,7 @@ void HttpRequest::parse_request(std::string request, serverConf *conf)
 		parseState = INBODY;
 	}
 	rtype = KEEP_ALIVE;
-	if (!parse_body(HeaderEnd + 4, request, conf))
+	if (!parse_body(HeaderEnd + 4, request))
 	{
 		if (rtype == ERROR)
 			std::cout << "error code: [" << errorCode << "]\n";
@@ -233,11 +236,15 @@ void HttpRequest::parse_request(std::string request, serverConf *conf)
 			std::cout << "INCOMPLETE\n";
 		return ;
 	}
-	std::cout << "DONE: body: [" << req.body << "]\n";
+	// should build response before clear the headers map
+	parseState = INHEADER;
+	req.headers.clear();
+	std::cout << "body: [" << req.body << "]\n";
 }
 
-HttpRequest::HttpRequest()
+HttpRequest::HttpRequest() : rtype(INCOMPLETE)
 {
+	rtype = INCOMPLETE;
 	current_pos = 0;
 	bodyType = NONE;
 	bodyState = INSIZE;

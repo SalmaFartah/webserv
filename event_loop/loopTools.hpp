@@ -14,22 +14,25 @@
 #include "../parse_config/inc/FillLocation.hpp"
 #include <cstring>
 #include "../parse_config/inc/FillServer.hpp"
-// #include "../parse_request/inc/HttpRequest.hpp"
+#include "../parse_request/inc/HttpRequest.hpp"
 
-#define BUFFER_SZ 200
+#define BUFFER_SZ 500
 
 struct myclients
 {
     std::string clieFile;
     serverConf  *cliConf;
     std::time_t clieTime;
-    // HttpRequest request;
+    HttpRequest request;
+    std::string resp;
+    size_t      ofssetResp;
 };
 
 
 class loopTools
 {
     private:
+        bool isconnected;
         std::vector<struct myclients> infoClie;
         std::vector<struct pollfd> vecFds;
         size_t serv_nb;
@@ -39,8 +42,9 @@ class loopTools
         loopTools(std::vector<serverConf> servers);
         void mainLoop();
         void newConnection(struct pollfd& server);
-        void existClient(struct pollfd& client, int clieIdx, size_t *idx);
+        bool existClient(struct pollfd& client, int clieIdx, size_t *idx);
         void close_fds();
+        void closeClient(int fd, int clieIdx, size_t *i);
         ~loopTools();
 };
 
