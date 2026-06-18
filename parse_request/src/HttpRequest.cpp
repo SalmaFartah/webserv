@@ -156,7 +156,7 @@ bool HttpRequest::parse_body(size_t bodystrat, std::string request, serverConf *
 				bodyState = IN_CHUNK;
 				size = get_size(bodyreq, pos0, pos1);
 				std::cout << "[" << size << "]" << std::endl;
-				if (size < 0)
+				if (size == 0)
 					return false;
 			}
 			if (bodyState == IN_CHUNK)
