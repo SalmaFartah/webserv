@@ -48,5 +48,6 @@ class HttpRequest
 		int errorCode;
 		enum {INCOMPLETE, DONE, ERROR, KEEP_ALIVE} rtype;
 		void parse_request(std::string, serverConf *);
+
 		~HttpRequest();
 };

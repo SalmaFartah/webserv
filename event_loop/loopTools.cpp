@@ -44,7 +44,6 @@ loopTools::loopTools(std::vector<serverConf> servers) : serv_nb(0)
 
 			fds.fd = serverFd; //// this second param of poll, its like how many slots of your array to read, starting from index 0, to know exactly when to stop scanning memory, without loosing cpu for all fds only the active ones
 			fds.events = POLLIN; // if someone knock the door(there is a data to read) watchout
-			fds.revents = 0;
 
 			vecFds.push_back(fds);
 
@@ -69,10 +68,17 @@ loopTools::loopTools(std::vector<serverConf> servers) : serv_nb(0)
 	}
 	
 }
-
+void loopTools::closeClient(int fd, int clieIdx, size_t *i)
+{
+	close(fd);
+	infoClie.erase(infoClie.begin() + clieIdx);
+	vecFds.erase(vecFds.begin() + *i);
+	(*i)--;
+}
 void loopTools::newConnection(struct pollfd& server)
 {
 	// handle a client conenction
+	struct pollfd client;
 	sockaddr_in cliaddr;
 	socklen_t client_len = sizeof(cliaddr);
 	// extract the first connection request on the queue of pending connections. It creates a brand-new socket descriptor specifically for communicating with that unique client.
@@ -89,46 +95,36 @@ void loopTools::newConnection(struct pollfd& server)
 	server.revents = 0;
 	
 //	add the master then override it with new client
-	vecFds.push_back(vecFds[0]);
+	vecFds.push_back(client);
 	vecFds.back().fd = cli_sock;
-	vecFds.back().revents = 0;
+	vecFds.back().events = POLLIN;
 	
 }
 
 
-void loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
+bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 {
+	
 	char buffer[BUFFER_SZ];
 	ssize_t reading = read(client.fd, buffer, sizeof(buffer) - 1); // our read is non blocking io mean if our kernel buffer is empty read will not frozen here and wait
+	if (reading < 0)
+		perror("read: ");
 	if (reading > 0)
 	{
-		infoClie[clieIdx].clieTime = std::time(NULL);
 		buffer[reading] = '\0';
 		infoClie[clieIdx].clieFile += buffer; // this one accumulate buffer
-		// infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf);
-		
-		// while (infoClie[clieIdx].request.rtype == 3) // THIS case is complete and i must send the file again till done and treate each response
-		// {
-		// 	// the parser will return each request seprately
-		// 	infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf);
-		// 	// DONE for each request
-		// }
-		// if (infoClie[clieIdx].request.rtype == 2) // ERROR
-		// {
-			
-		// }
-		
-        std::cout << "server read from client " << client.fd << ": " << buffer << std::endl;
+
+        std::cout << "server read from client " << client.fd << ": \n[" << buffer << "]" << std::endl;
+		infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf);
 	}
     else if (reading == 0) // connection closed cleanly by the client (TCP FIN)
 	{
 		std::cout << "client: " << client.fd << " disconnected" << '\n';
 		// std::cout << "MY CLIENT FILES:  \n" << infoClie[clieIdx].clieFile << std::endl;
-		close(client.fd);
-		vecFds.erase(vecFds.begin() + serv_nb + clieIdx);
-		infoClie.erase(infoClie.begin() + clieIdx);
-		(*idx)--;
+		closeClient(client.fd, *idx - serv_nb, idx);
+		return false;
 	}
+	return true;
 }
 
 void loopTools::mainLoop()
@@ -146,12 +142,11 @@ void loopTools::mainLoop()
 			if (i >= serv_nb && !(vecFds[i].revents) && (difftime(std::time(NULL), infoClie[i - serv_nb].clieTime) > 30.0))
 			{
 				// close the connection and fds, and remove this client and continue
-				// std::cout << "diffrenece time " << difftime(std::time(NULL), infoClie[i - serv_nb].clieTime) << "seconds\n";
-				std::cout << "client " << vecFds[i].fd << " TIME OUT\n";
-				close(vecFds[i].fd);
-				infoClie.erase(infoClie.begin() + (i - serv_nb));
-				vecFds.erase(vecFds.begin() + i);
+				std::cout << "-----CLIENT " << vecFds[i].fd << " TIME OUT-------\n";
 				// Note: --NO RESPONSE YET--
+				// callRespErr()
+				infoClie[i - serv_nb].resp = "HTTP/1.1 408 Request Timeout\r\nContent-Type: text/plain\r\nContent-Length: 15\r\n\r\nRequest Timeout";
+				vecFds[i].events = POLLOUT;
 				continue;
 			}
 			else if (i < serv_nb  && vecFds[i].revents & POLLIN) // new connection arrived
@@ -163,17 +158,55 @@ void loopTools::mainLoop()
 				newConnection(vecFds[i]);
 				// new client file and config
 				newClient.cliConf = linkServConf[vecFds[i].fd];
+				newClient.ofssetResp = 0;
 				infoClie.push_back(newClient);
 			}
-			else if (vecFds[i].revents & POLLIN) // a client want to do smth
+			// RESPONSE --------->
+			else if (vecFds[i].revents & POLLOUT)
+			{
+				// std::cout << "-------------CHECK FOR POLLOUT REVENTS-----------\n";
+				ssize_t n = write(vecFds[i].fd, infoClie[i - serv_nb].resp.data() + infoClie[i - serv_nb].ofssetResp, infoClie[i - serv_nb].resp.size() - infoClie[i - serv_nb].ofssetResp);
+				if (n < 0)
+					perror("write: ");
+				else if (n > 0)
+					infoClie[i - serv_nb].ofssetResp += n;
+				else if (n == 0)
+					perror("write: ");
+				if (infoClie[i - serv_nb].resp.size() == infoClie[i - serv_nb].ofssetResp) // writing everything
+				{
+					vecFds[i].events = POLLIN;
+					infoClie[i - serv_nb].ofssetResp = 0;
+					std::cout << "SERVER SENDING RESPONSE.. DONE\n";
+					if (infoClie[i - serv_nb].request.rtype != 3)
+					{
+						std::cout << "client: " << vecFds[i].fd << " disconnected after response" << '\n';
+						closeClient(vecFds[i].fd, i - serv_nb, &i);
+					}
+				}
+			}
+			else if (vecFds[i].revents & POLLIN || (!infoClie.empty() && infoClie[i - serv_nb].request.rtype == 3)) // a client want to do smth
 			{
 				// handle this data on existing client
-				existClient(vecFds[i], i - serv_nb, &i);
-				
+				infoClie[i - serv_nb].clieTime = std::time(NULL);
+				if (infoClie[i - serv_nb].request.rtype == 3) // keep alive
+				{
+					infoClie[i - serv_nb].request.parse_request(infoClie[i - serv_nb].clieFile, infoClie[i - serv_nb].cliConf);
+					isconnected = true;
+				}
+				else
+					isconnected = existClient(vecFds[i], i - serv_nb, &i);
+				if (isconnected && infoClie[i - serv_nb].request.rtype != 0)
+				{
+					infoClie[i - serv_nb].resp = "HTTP/1.1 200 OK\r\nDate: Mon, 15 Jun 2026 12:00:00 GMT\r\nContent-Type: text/plain\r\nContent-Length: 2\r\nConnection: keep-alive\r\n\r\nOK";
+					vecFds[i].events = POLLOUT;
+					std::cout << "set to POLLOUT\n";
+				}
+					// std::cout << "rtype "<< infoClie[i - serv_nb].request.rtype << "\n";
 			}
+
 		}
 	}
-}    
+}
 
 loopTools::~loopTools()
 {

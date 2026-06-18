@@ -242,7 +242,7 @@ void HttpRequest::parse_request(std::string request, serverConf *conf)
 	std::cout << "body: [" << req.body << "]\n";
 }
 
-HttpRequest::HttpRequest()
+HttpRequest::HttpRequest() : rtype(INCOMPLETE)
 {
 	rtype = INCOMPLETE;
 	current_pos = 0;
