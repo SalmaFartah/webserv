@@ -237,7 +237,7 @@ void HttpRequest::parse_request(std::string request, serverConf *conf)
 	req.headers.clear();
 }
 
-HttpRequest::HttpRequest()
+HttpRequest::HttpRequest() : rtype(INCOMPLETE)
 {
 	rtype = INCOMPLETE;
 	current_pos = 0;
