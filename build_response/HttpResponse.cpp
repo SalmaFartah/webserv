@@ -7,20 +7,28 @@ std::string HttpResponse::getReasonPhrase(int code)
 	{
 		case 400:
 			reason_phrase = "Bad Request";
+			break;
 		case 403:
 			reason_phrase = "Forbidden";
+			break;
 		case 404:
 			reason_phrase = "Not Found";
+			break;
 		case 405:
 			reason_phrase = "Method Not Allowed";
+			break;
 		case 408:
 			reason_phrase = "Time out";
+			break;
 		case 413:
 			reason_phrase = "Content Too Large";
+			break;
 		case 500:
 			reason_phrase = "Internal Server Error";
+			break;
 		case 501:
 			reason_phrase = "Not Implemented";
+			break;
 	}
 	return reason_phrase;
 }
@@ -53,7 +61,7 @@ void HttpResponse::initMimeTable()
 std::string HttpResponse::getErrorPage(int code, const std::string& reason_phrase)
 {
 	std::ostringstream oss;
-	oss << "<html><body><h1>" << code << reason_phrase << "</h1></body></html>";
+	oss << "<html><body><h1>" << code << " " << reason_phrase << "</h1></body></html>";
 	return oss.str();
 }
 std::string HttpResponse::get_errbody(int errorCode, const std::string& reason_phrase, serverConf& server, locationConf& location, std::string& contentType)
@@ -113,6 +121,7 @@ std::string HttpResponse::error_response(int errorCode, serverConf& server, loca
 	}
 	response << "\r\n";
 	response << body;
+	return response.str();
 }
 
 HttpResponse::HttpResponse()

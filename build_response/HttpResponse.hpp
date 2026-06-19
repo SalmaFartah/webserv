@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../parse_request/inc/HttpRequest.hpp"
+#include "../parse_config/inc/Fill.hpp"
+#include <map>
 #include <fstream>
 
 class HttpResponse
@@ -12,7 +13,6 @@ class HttpResponse
 		std::string getErrorPage(int, const std::string&);
 		std::string getReasonPhrase(int);
 		std::string get_errbody(int, const std::string&, serverConf&, locationConf&, std::string&);
-		// std::string getMIMEtype(const std::string&);
 		void initMimeTable();
 		~HttpResponse();
 };

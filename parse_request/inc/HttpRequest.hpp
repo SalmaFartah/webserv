@@ -8,6 +8,7 @@
 #include <algorithm>
 #include "../../parse_config/inc/FillServer.hpp"
 #include "../../parse_config/inc/FillLocation.hpp"
+#include "../../build_response/HttpResponse.hpp"
 
 #define MAX_URI_LENGTH 8192
 

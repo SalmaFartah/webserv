@@ -39,7 +39,7 @@ class loopTools
         std::map<int, serverConf*> linkServConf;
     public:
         loopTools();
-        loopTools(std::vector<serverConf> servers);
+        loopTools(std::vector<serverConf> &servers);
         void mainLoop();
         void newConnection(struct pollfd& server);
         bool existClient(struct pollfd& client, int clieIdx, size_t *idx);
