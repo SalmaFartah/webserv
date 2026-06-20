@@ -24,6 +24,16 @@ struct HasPort
     }
 };
 
+typedef struct
+{
+	std::string method;
+	std::string request_target;
+	std::string query;
+	std::string httpVersion;
+	std::map<std::string, std::string> headers;
+	std::string body;
+} ReqContent;
+
 typedef struct locationConf
 {
     std::string path; // location /path/

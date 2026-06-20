@@ -65,7 +65,7 @@ bool HttpRequest::parse_headers()
 	size_t eofLine;
 	size_t colon;
 	std::string line;
-	std::cout << "IN PARSE HEADER\n";
+	// std::cout << "IN PARSE HEADER\n";
 	while (startLine < header.size())
 	{
 		eofLine = header.find("\r\n", startLine);
@@ -88,7 +88,7 @@ bool HttpRequest::parse_headers()
 			value = "";
 		if (!value.empty())
 			value = value.substr(value.find_first_not_of(" \t"), value.find_last_not_of(" \t") - value.find_first_not_of(" \t") + 1);
-		std::cout << "key: [" << key << "] value: [" << value << "]\n";
+		// std::cout << "key: [" << key << "] value: [" << value << "]\n";
 		if ((key == "host" && (req.headers.count("host") || value.empty()))
 		|| (key == "content-length" && (req.headers.count("content-length") || invalid_value(value)))
 		|| (key == "transfer-encoding" && (value != "chunked" || req.headers.count("transfer-encoding")))
@@ -237,7 +237,12 @@ void HttpRequest::parse_request(std::string request, serverConf *conf)
 		return ;
 	}
 	// should build response before clear the headers map
+	if (rtype == KEEP_ALIVE)
+		std::cout << "KEEP_ALIVE\n";
+	else if (rtype == DONE)
+		std::cout << "DONE\n";
 	parseState = INHEADER;
+	route.routeCheck(conf, req);
 	req.headers.clear();
 	std::cout << "body: [" << req.body << "]\n";
 }

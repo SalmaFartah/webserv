@@ -8,23 +8,15 @@
 #include <algorithm>
 #include "../../parse_config/inc/FillServer.hpp"
 #include "../../parse_config/inc/FillLocation.hpp"
+#include "../../route/RouteResp.hpp"
 
 #define MAX_URI_LENGTH 8192
 
-typedef struct
-{
-	std::string method;
-	std::string request_target;
-	std::string query;
-	std::string httpVersion;
-	std::map<std::string, std::string> headers;
-	std::string body;
-} ReqContent;
 
 class HttpRequest
 {
 		ReqContent req;
-
+		RouteResp  route;
 		std::string requestLine;
 		std::string header;
 

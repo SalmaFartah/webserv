@@ -7,7 +7,7 @@ void loopTools::close_fds()
 	for (size_t i = 0; i < vecFds.size(); i++)
 		close(vecFds[i].fd);
 }
-loopTools::loopTools(std::vector<serverConf> servers) : serv_nb(0)
+loopTools::loopTools(std::vector<serverConf>& servers) : serv_nb(0)
 {
 
 	for (size_t i = 0; i < servers.size(); i++) // EACH SERVER
@@ -197,7 +197,7 @@ void loopTools::mainLoop()
 					isconnected = existClient(vecFds[i], i - serv_nb, &i);
 				if (isconnected && infoClie[i - serv_nb].request.rtype != 0)
 				{
-					infoClie[i - serv_nb].resp = "HTTP/1.1 200 OK\r\nDate: Mon, 15 Jun 2026 12:00:00 GMT\r\nContent-Type: text/plain\r\nContent-Length: 2\r\nConnection: keep-alive\r\n\r\nOK";
+					infoClie[i - serv_nb].resp = "HTTP/1.1 200 OK\r\nDate: Mon, 15 Jun 2026 12:00:00 GMT\r\nContent-Type: text/plain\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK";
 					vecFds[i].events = POLLOUT;
 					std::cout << "set to POLLOUT\n";
 				}
