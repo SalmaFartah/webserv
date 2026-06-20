@@ -168,6 +168,11 @@ std::vector<serverConf> parseConfig(std::vector<std::pair<tokenType, std::string
 				// end of location block
 				if (type == CLOSED_BC)
 				{
+					if (currentLocation.cgi_pass.empty() != currentLocation.cgi_extension.empty())
+					{
+    					throw std::runtime_error(
+        					"Missing required directive: cgi_pass and cgi_extension must be set together");
+					}
 					currentServer.locations.push_back(currentLocation);
 					state = IN_SERVER;
 					pos++;
