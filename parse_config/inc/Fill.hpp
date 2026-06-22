@@ -24,6 +24,17 @@ struct HasPort
     }
 };
 
+typedef struct
+{
+	std::string method;
+	std::string request_target;
+	std::string query;
+	std::string httpVersion;
+	std::map<std::string, std::string> headers;
+	std::string body;
+    bool connection;
+} ReqContent;
+
 typedef struct locationConf
 {
     std::string path; // location /path/
@@ -40,7 +51,7 @@ typedef struct locationConf
     std::string cgi_extension; // script extension: .php/.py/.pl
     std::string cgi_pass; // the executer that will run the script
     bool defaultm;
-    locationConf() // CHECK THIS LATER
+    locationConf()
     {
         methods.insert("GET");
         methods.insert("POST");

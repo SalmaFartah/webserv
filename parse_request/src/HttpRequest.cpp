@@ -1,5 +1,11 @@
 #include "../inc/HttpRequest.hpp"
 
+std::string YELLOW = "\033[33m";
+std::string ORANGE = "\033[38;5;208m";   // 256-color ANSI
+std::string SKY_BLUE = "\033[38;5;117m"; // "bleu ciel"
+std::string RESET = "\033[0m";
+
+
 bool HttpRequest::parse_requestLine()
 {
 	std::string buff;
@@ -16,10 +22,13 @@ bool HttpRequest::parse_requestLine()
 	req.request_target = segments[1];
 	req.httpVersion = segments[2];
 
+	if (req.request_target.size() > MAX_URI_LENGTH)
+		return errorCode = 414, rtype = ERROR, false;
+
 	if ((req.method == "GET" || req.method == "POST" || req.method == "DELETE") \
-	&& req.request_target.find("/") == 0 && req.httpVersion == "HTTP/1.1"
-	&& req.request_target.size() <= MAX_URI_LENGTH)
+	&& req.request_target.find("/") == 0 && req.httpVersion == "HTTP/1.1")
 		return extract_query(), true;
+	
 	return errorCode = 400, rtype = ERROR, false;
 }
 
@@ -90,7 +99,7 @@ bool HttpRequest::store_header(const std::string& key, const std::string& value,
 	|| (key == "content-Type" && headers.count("content-Type")))
 		return false;
 	if (key == "connection" && value == "close")
-		keepAlive = false;
+		req.connection = false;
 	headers[key] = value;
 	return true;
 }
@@ -120,19 +129,18 @@ bool HttpRequest::parse_headers()
 	return true;
 }
 
-size_t HttpRequest::get_size(std::string bodyreq, size_t start, size_t end)
+bool HttpRequest::get_size(size_t& size, std::string bodyreq, size_t start, size_t end)
 {
 	std::string sizeSTR = bodyreq.substr(start, end - start);
 	if (isspace(sizeSTR[0]) || sizeSTR[0] == '+' || sizeSTR[0] == '-')
-		return rtype = ERROR, errorCode = 400, -1;
-	size_t size;
+		return rtype = ERROR, errorCode = 400, false;
 	char *check = NULL;
 	size = strtoul(sizeSTR.c_str(), &check, 16);
 	if ((!size && sizeSTR.size() != 1) || (size && sizeSTR[0] == '0') || errno == ERANGE || *check)
-		return errorCode = 400, rtype = ERROR, -1;
+		return errorCode = 400, rtype = ERROR, false;
 	if (!size)
 		bodyState = THE_END;
-	return size;
+	return true;
 }
 
 bool HttpRequest::handle_chunked(std::string bodyreq)
@@ -148,7 +156,7 @@ bool HttpRequest::handle_chunked(std::string bodyreq)
 				if (pos1 == std::string::npos)
 					return rtype = INCOMPLETE, false;
 				bodyState = IN_CHUNK;
-				if ((size = get_size(bodyreq, pos0, pos1)) < 0)
+				if (!get_size(size, bodyreq, pos0, pos1))
 					return rtype = ERROR, errorCode = 400, false;
 			}
 			if (bodyState == IN_CHUNK)
@@ -171,7 +179,7 @@ bool HttpRequest::handle_chunked(std::string bodyreq)
 					return rtype = INCOMPLETE, false;
 				if (str.size() >= 4 && str.find("\r\n\r\n"))
 					return errorCode = 400, rtype = ERROR, false;
-				if (!keepAlive)
+				if (!req.connection)
 					rtype = DONE;
 				current_pos += pos1 + 4;
 				bodyState = INSIZE;
@@ -190,7 +198,7 @@ bool HttpRequest::parse_body(size_t bodyStart, std::string request)
 		req.body = request.substr(bodyStart);
 		if (req.body.size() < body_size)
 			return rtype = INCOMPLETE, false;
-		if (!keepAlive)
+		if (!req.connection)
 			rtype = DONE;
 		req.body = req.body.substr(0, body_size);
 		bodyType = NONE;
@@ -203,7 +211,6 @@ bool HttpRequest::parse_body(size_t bodyStart, std::string request)
 
 void HttpRequest::parse_request(std::string request, serverConf *conf)
 {
-	(void)conf;
 	request = request.substr(current_pos);
 	static size_t HeaderEnd;
 	static size_t HeaderBegin;
@@ -233,7 +240,13 @@ void HttpRequest::parse_request(std::string request, serverConf *conf)
 	rtype = KEEP_ALIVE;
 	if (!parse_body(HeaderEnd + 4, request))
 		return ;
+	std::cout << "request-target: " << req.request_target << std::endl;
+	HttpResponse resp;
+	std::cout << SKY_BLUE << "\n--------------------------------------------------\n";
+	std::cout << resp.static_file(*conf, conf->locations[0], req.request_target, req.connection) << "\n";
+	std::cout << "--------------------------------------------------\n\n" << RESET;
 	parseState = INHEADER;
+	req.connection = true;
 	req.headers.clear();
 }
 
@@ -244,6 +257,6 @@ HttpRequest::HttpRequest() : rtype(INCOMPLETE)
 	bodyType = NONE;
 	bodyState = INSIZE;
 	parseState = INHEADER;
-	keepAlive = true;
+	req.connection = true;
 }
 HttpRequest::~HttpRequest(){}

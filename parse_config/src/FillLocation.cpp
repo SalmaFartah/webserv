@@ -64,8 +64,7 @@ void FillLocation::returnHandler( std::vector<std::string> values, state )
 
 	char *end = NULL;
 	int st_code = std::strtol(status_code.c_str(), &end, 10);
-	if (status_code[0] == '0' || errno == ERANGE || (st_code != 301 && st_code != 302 \
-	&& st_code != 303 && st_code != 307 && st_code != 308))
+	if (status_code[0] == '0' || errno == ERANGE || (st_code != 301 && st_code != 302))
 		throw std::logic_error("Error: return: invalid status code: `" + status_code + "'");
 
 	std::string url = values[1];

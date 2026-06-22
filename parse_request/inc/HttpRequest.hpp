@@ -9,18 +9,7 @@
 #include "../../parse_config/inc/FillServer.hpp"
 #include "../../parse_config/inc/FillLocation.hpp"
 #include "../../build_response/HttpResponse.hpp"
-
 #define MAX_URI_LENGTH 8192
-
-typedef struct
-{
-	std::string method;
-	std::string request_target;
-	std::string query;
-	std::string httpVersion;
-	std::map<std::string, std::string> headers;
-	std::string body;
-} ReqContent;
 
 class HttpRequest
 {
@@ -33,7 +22,6 @@ class HttpRequest
 		enum {CHUNKED, NORMAL, NONE} bodyType;
 		enum {INHEADER, INBODY} parseState;
 		enum {INSIZE, IN_CHUNK, THE_END} bodyState;
-		bool keepAlive;
 		size_t body_size;
 		size_t current_pos;
 
@@ -44,7 +32,7 @@ class HttpRequest
 		bool get_value(std::string&, const std::string&, size_t);
 		void extract_query();
 		bool invalid_value(std::string);
-		size_t get_size(std::string, size_t, size_t);
+		bool get_size(size_t&, std::string, size_t, size_t);
 		bool parse_body(size_t, std::string);
 		bool handle_chunked(std::string);
 		bool store_header(const std::string&, const std::string&, headerMap&);
