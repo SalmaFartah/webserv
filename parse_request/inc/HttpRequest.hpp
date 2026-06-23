@@ -9,6 +9,7 @@
 #include "../../parse_config/inc/FillServer.hpp"
 #include "../../parse_config/inc/FillLocation.hpp"
 #include "../../build_response/HttpResponse.hpp"
+// #include "../../route/RouteResp.hpp"
 #define MAX_URI_LENGTH 8192
 
 class HttpRequest
@@ -40,7 +41,7 @@ class HttpRequest
 		HttpRequest();
 		int errorCode;
 		enum {INCOMPLETE, DONE, ERROR, KEEP_ALIVE} rtype;
-		void parse_request(std::string, serverConf *);
+		std::string parse_request(std::string, serverConf *);
 
 		~HttpRequest();
 };

@@ -209,7 +209,7 @@ bool HttpRequest::parse_body(size_t bodyStart, std::string request)
 	return true;
 }
 
-void HttpRequest::parse_request(std::string request, serverConf *conf)
+std::string HttpRequest::parse_request(std::string request, serverConf *conf)
 {
 	request = request.substr(current_pos);
 	static size_t HeaderEnd;
@@ -221,33 +221,32 @@ void HttpRequest::parse_request(std::string request, serverConf *conf)
 		if (HeaderEnd == std::string::npos)
 		{
 			rtype = INCOMPLETE;
-			return ;
+			return "";
 		}
 		HeaderBegin = request.find("\r\n");
 		requestLine = request.substr(0, HeaderBegin);
 		if (!parse_requestLine())
-			return ;
+			return "";
 		HeaderBegin += 2;
 		header = request.substr(HeaderBegin, HeaderEnd - HeaderBegin + 2);
 		if (!header.size() || !parse_headers())
 		{
 			rtype = ERROR;
 			errorCode = 400;
-			return ;
+			return "";
 		}
 		parseState = INBODY;
 	}
 	rtype = KEEP_ALIVE;
 	if (!parse_body(HeaderEnd + 4, request))
-		return ;
+		return "";
 	std::cout << "request-target: " << req.request_target << std::endl;
-	HttpResponse resp;
-	std::cout << SKY_BLUE << "\n--------------------------------------------------\n";
-	std::cout << resp.static_file(*conf, conf->locations[0], req.request_target, req.connection) << "\n";
-	std::cout << "--------------------------------------------------\n\n" << RESET;
 	parseState = INHEADER;
 	req.connection = true;
 	req.headers.clear();
+	// RouteResp response;
+	// response.routeCheck();
+	// should rerurn the response from the route..
 }
 
 HttpRequest::HttpRequest() : rtype(INCOMPLETE)
