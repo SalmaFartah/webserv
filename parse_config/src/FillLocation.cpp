@@ -102,8 +102,9 @@ void FillLocation::cgiExtHandler(std::vector<std::string> values, state)
 	if (!values.size())
 		throw std::logic_error("Error: cgi_extension: missing value.");
 	std::string ext = values[0];
-	if (ext.find(".") || ext.size() < 2)
+	if (ext.find(".") || ext.size() == 1 || std::count(ext.begin() + 1, ext.end(), '.'))
 		throw std::logic_error("Error: cgi_extension: invalid extension: `" + ext + "'");
+	location.cgi_extension = ext;
 }
 
 bool FillLocation::directive(std::string str)
