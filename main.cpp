@@ -38,15 +38,15 @@ int main(int ac, char *av[])
 
 	/*#################--EVENT LOOP--######################*/
 
-	// try
-	// {
-	// 	loopTools lp(serv);
-	// 	lp.mainLoop();
-	// }
-	// catch(const std::exception& e)
-	// {
-	// 	std::cerr << e.what() << '\n';
-	// }
+	try
+	{
+		loopTools lp(serv);
+		lp.mainLoop();
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
 	
 	
 }

@@ -1,113 +1,328 @@
 #include "../inc/CGIHandler.hpp"
+#include "../inc/CGIExecutor.hpp"
 #include <sstream>
 #include <algorithm>
+#include <cctype>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <iostream>
+
+
 
 std::string CGIHandler::getFileExtension(const std::string& filename)
 {
-	size_t dotPos = filename.find_last_of(".");
-	if (dotPos == std::string::npos || dotPos == filename.length() - 1)
-		return "";
-	return filename.substr(dotPos);
+    size_t dotPos = filename.find_last_of(".");
+    if (dotPos == std::string::npos || dotPos == filename.length() - 1)
+        return "";
+    
+    std::string ext = filename.substr(dotPos);
+    
+    if (!isValidExtension(ext))
+        return "";
+    
+    return ext;
 }
 
-// Check if request target matches CGI extension in location config
+bool CGIHandler::isValidExtension(const std::string& ext)
+{
+    if (ext.empty() || ext[0] != '.')
+        return false;
+    
+    if (ext.find("..") != std::string::npos)
+        return false;
+    
+    for (size_t i = 1; i < ext.length(); ++i) {
+        char c = ext[i];
+        if (!std::isalnum(static_cast<unsigned char>(c)) && c != '_' && c != '-')
+            return false;
+    }
+    
+    if (ext.length() > 10)
+        return false;
+    
+    return true;
+}
+
 bool CGIHandler::isCGIRequest(const std::string& requestTarget, const locationConf& loc)
 {
-	// If no CGI extension is configured, this is not a CGI request
-	if (loc.cgi_extension.empty())
-		return false;
-	
-	// Extract filename from request target (ignore query string and fragments)
-	std::string path = requestTarget;
-	size_t queryPos = path.find("?");
-	if (queryPos != std::string::npos)
-		path = path.substr(0, queryPos);
-	
-	std::string ext = getFileExtension(path);
-	
-	// Compare with configured CGI extension (case-insensitive)
-	if (ext.empty())
-		return false;
-	
-	std::string configExt = loc.cgi_extension;
-	
-	// Convert both to lowercase for comparison
-	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-	std::transform(configExt.begin(), configExt.end(), configExt.begin(), ::tolower);
-	
-	return ext == configExt;
+    if (loc.cgi_extension.empty()) {
+        return false;
+    }
+    
+    std::string path = requestTarget;
+    size_t queryPos = path.find("?");
+    if (queryPos != std::string::npos)
+        path = path.substr(0, queryPos);
+    
+    std::string ext = getFileExtension(path);
+    
+    if (ext.empty())
+        return false;
+    
+    std::string extLower = ext;
+    std::string configLower = loc.cgi_extension;
+    std::transform(extLower.begin(), extLower.end(), extLower.begin(), ::tolower);
+    std::transform(configLower.begin(), configLower.end(), configLower.begin(), ::tolower);
+    
+    return extLower == configLower;
 }
 
-// Build CGI environment variables from request and config
+const locationConf* CGIHandler::findMatchingLocation(
+    const std::string& path,
+    const serverConf& server
+) {
+    const locationConf* bestMatch = NULL;
+    size_t bestMatchLen = 0;
+    
+    for (size_t i = 0; i < server.locations.size(); ++i) {
+        const locationConf& loc = server.locations[i];
+        
+        if (path.find(loc.path) == 0) {
+            if (loc.path.length() > bestMatchLen) {
+                bestMatch = &loc;
+                bestMatchLen = loc.path.length();
+            }
+        }
+    }
+    
+    return bestMatch;
+}
+
+std::string CGIHandler::getScriptPath(
+    const std::string& requestTarget,
+    const locationConf& loc,
+    const serverConf& server
+) {
+    std::string scriptPath;
+    
+    if (!loc.root.empty()) {
+        scriptPath = loc.root;
+    } else {
+        scriptPath = server.root;
+    }
+    
+    std::string relativePath = requestTarget;
+    if (relativePath.find(loc.path) == 0) {
+        relativePath = relativePath.substr(loc.path.length());
+    }
+    
+    if (!scriptPath.empty() && scriptPath[scriptPath.length() - 1] != '/') {
+        scriptPath += '/';
+    }
+    
+    size_t queryPos = relativePath.find('?');
+    if (queryPos != std::string::npos) {
+        relativePath = relativePath.substr(0, queryPos);
+    }
+    
+    scriptPath += relativePath;
+    
+    return scriptPath;
+}
+
+bool CGIHandler::scriptExists(const std::string& scriptPath) {
+    struct stat st;
+    if (stat(scriptPath.c_str(), &st) != 0) {
+        return false;
+    }
+    if (!S_ISREG(st.st_mode)) {
+        return false;
+    }
+    if (access(scriptPath.c_str(), X_OK) != 0) {
+        return false;
+    }
+    return true;
+}
+
+std::string CGIHandler::getInterpreter(const std::string& extension) {
+    if (extension == ".php" || extension == ".php3" || extension == ".php4") {
+        return "/usr/bin/php-cgi";
+    } else if (extension == ".py" || extension == ".pyc") {
+        return "/usr/bin/python3";
+    } else if (extension == ".pl" || extension == ".cgi") {
+        return "/usr/bin/perl";
+    } else if (extension == ".rb") {
+        return "/usr/bin/ruby";
+    } else if (extension == ".sh") {
+        return "/bin/bash";
+    }
+    return "";
+}
+
 std::map<std::string, std::string> CGIHandler::buildCGIEnv(
-	const HttpRequest& request,
-	const locationConf& /*loc*/,
-	const serverConf& srv,
-	const std::string& scriptPath
-)
-{
-	std::map<std::string, std::string> env;
-	
-	// REQUEST_METHOD: GET, POST, DELETE, etc.
-	env["REQUEST_METHOD"] = request.getMethod();
-	
-	// QUERY_STRING: everything after ? in the URL
-	env["QUERY_STRING"] = request.getQuery();
-	
-	// CONTENT_LENGTH: size of the request body
-	std::stringstream ss;
-	ss << request.getBodySize();
-	env["CONTENT_LENGTH"] = ss.str();
-	
-	// CONTENT_TYPE: from Content-Type header
-	std::string contentType = request.getHeader("content-type");
-	if (!contentType.empty())
-		env["CONTENT_TYPE"] = contentType;
-	
-	// SCRIPT_FILENAME: full path to the CGI script
-	env["SCRIPT_FILENAME"] = scriptPath;
-	
-	// REQUEST_URI: the full request path (without query string parameters parsed out)
-	env["REQUEST_URI"] = request.getTarget();
-	
-	// PATH_INFO: path after the script name (for now, same as request target)
-	env["PATH_INFO"] = request.getTarget();
-	
-	// SERVER_NAME: hostname from server config
-	if (!srv.listen.empty())
-		env["SERVER_NAME"] = srv.listen[0].first; // Use first listen address
-	
-	// SERVER_PORT: port from server config
-	if (!srv.listen.empty())
-	{
-		std::stringstream portStr;
-		portStr << srv.listen[0].second;
-		env["SERVER_PORT"] = portStr.str();
-	}
-	
-	// HTTP_HOST: from request headers (Host header)
-	std::string host = request.getHeader("host");
-	if (!host.empty())
-		env["HTTP_HOST"] = host;
-	
-	// Add HTTP_* environment variables for each header
-	std::map<std::string, std::string> allHeaders = request.getAllHeaders();
-	for (std::map<std::string, std::string>::const_iterator it = allHeaders.begin(); 
-		 it != allHeaders.end(); ++it)
-	{
-		// Convert header name to HTTP_* format: Content-Type -> HTTP_CONTENT_TYPE
-		std::string headerKey = it->first;
-		std::transform(headerKey.begin(), headerKey.end(), headerKey.begin(), ::toupper);
-		
-		// Replace hyphens with underscores
-		for (size_t i = 0; i < headerKey.length(); ++i)
-		{
-			if (headerKey[i] == '-')
-				headerKey[i] = '_';
-		}
-		
-		env["HTTP_" + headerKey] = it->second;
-	}
-	
-	return env;
+    const HttpRequest& request,
+    const locationConf& /*loc*/,
+    const serverConf& srv,
+    const std::string& scriptPath
+) {
+    std::map<std::string, std::string> env;
+    
+    env["REQUEST_METHOD"] = request.getMethod();
+    env["QUERY_STRING"] = request.getQuery();
+    
+    std::stringstream ss;
+    ss << request.getBodySize();
+    env["CONTENT_LENGTH"] = ss.str();
+    
+    std::string contentType = request.getHeader("content-type");
+    if (!contentType.empty())
+        env["CONTENT_TYPE"] = contentType;
+    
+    env["SCRIPT_FILENAME"] = scriptPath;
+    env["REQUEST_URI"] = request.getTarget();
+    env["PATH_INFO"] = request.getTarget();
+    
+    if (!srv.listen.empty())
+        env["SERVER_NAME"] = srv.listen[0].first;
+    
+    if (!srv.listen.empty()) {
+        std::stringstream portStr;
+        portStr << srv.listen[0].second;
+        env["SERVER_PORT"] = portStr.str();
+    }
+    
+    std::string host = request.getHeader("host");
+    if (!host.empty())
+        env["HTTP_HOST"] = host;
+    
+    std::map<std::string, std::string> allHeaders = request.getAllHeaders();
+    for (std::map<std::string, std::string>::const_iterator it = allHeaders.begin(); 
+         it != allHeaders.end(); ++it) {
+        std::string headerKey = it->first;
+        std::transform(headerKey.begin(), headerKey.end(), headerKey.begin(), ::toupper);
+        for (size_t i = 0; i < headerKey.length(); ++i) {
+            if (headerKey[i] == '-')
+                headerKey[i] = '_';
+        }
+        env["HTTP_" + headerKey] = it->second;
+    }
+    
+    return env;
+}
+
+
+std::string CGIHandler::handleCGIRequest(
+    const HttpRequest& request,
+    const serverConf& server
+) {
+    std::string path = request.getTarget();
+    
+    const locationConf* loc = findMatchingLocation(path, server);
+    if (!loc) {
+        return buildErrorResponse(404, "Not Found");
+    }
+    
+    if (!isCGIRequest(path, *loc)) {
+        return buildErrorResponse(400, "Bad Request: Not a CGI request");
+    }
+    
+    std::string scriptPath = getScriptPath(path, *loc, server);
+    
+    if (!scriptExists(scriptPath)) {
+        return buildErrorResponse(404, "CGI script not found");
+    }
+    
+    std::map<std::string, std::string> envVars = buildCGIEnv(request, *loc, server, scriptPath);
+    
+    std::string extension = getFileExtension(scriptPath);
+    std::string interpreter = getInterpreter(extension);
+    
+    CGIExecutor executor;
+    CGIExecutor::CGIResult result = executor.executeCGI(
+        scriptPath,
+        interpreter,
+        envVars,
+        request.getBody(),
+        30
+    );
+    
+    return buildCGIResponse(result);
+}
+
+
+std::string CGIHandler::buildCGIResponse(const CGIExecutor::CGIResult& result) {
+    if (result.statusCode != 200) {
+        return buildErrorResponse(500, result.error);
+    }
+    
+    std::string output = result.output;
+    
+    if (output.find("HTTP/") == 0 || output.find("Status:") == 0) {
+        return output;
+    }
+    
+    std::string contentType = "text/html";
+    std::string body = output;
+    
+    size_t contentTypePos = output.find("Content-Type:");
+    if (contentTypePos != std::string::npos) {
+        size_t endLine = output.find("\r\n", contentTypePos);
+        if (endLine != std::string::npos) {
+            contentType = output.substr(contentTypePos + 14, endLine - contentTypePos - 14);
+            size_t start = contentType.find_first_not_of(" \t");
+            if (start != std::string::npos) {
+                contentType = contentType.substr(start);
+                size_t end = contentType.find_last_not_of(" \t");
+                if (end != std::string::npos) {
+                    contentType = contentType.substr(0, end + 1);
+                }
+            }
+            body = output.substr(endLine + 2);
+        }
+    }
+    
+    // Utiliser stringstream au lieu de std::to_string()
+    std::stringstream ss;
+    ss << body.length();
+    
+    std::string response = "HTTP/1.1 200 OK\r\n";
+    response += "Content-Type: " + contentType + "\r\n";
+    response += "Content-Length: " + ss.str() + "\r\n";
+    response += "Connection: close\r\n";
+    response += "\r\n";
+    response += body;
+    
+    return response;
+}
+
+// VERSION CORRIGÉE SANS std::to_string()
+std::string CGIHandler::buildErrorResponse(int code, const std::string& message) {
+    // Convertir code en string avec stringstream
+    std::stringstream codeStr;
+    codeStr << code;
+    
+    std::string body = "<html><body><h1>Error " + codeStr.str() + "</h1>";
+    body += "<p>" + message + "</p></body></html>";
+    
+    std::stringstream bodyLen;
+    bodyLen << body.length();
+    
+    std::string response = "HTTP/1.1 " + codeStr.str() + " " + getStatusText(code) + "\r\n";
+    response += "Content-Type: text/html\r\n";
+    response += "Content-Length: " + bodyLen.str() + "\r\n";
+    response += "Connection: close\r\n";
+    response += "\r\n";
+    response += body;
+    
+    return response;
+}
+
+std::string CGIHandler::getStatusText(int code) {
+    switch (code) {
+        case 200: return "OK";
+        case 201: return "Created";
+        case 204: return "No Content";
+        case 206: return "Partial Content";
+        case 301: return "Moved Permanently";
+        case 302: return "Found";
+        case 400: return "Bad Request";
+        case 403: return "Forbidden";
+        case 404: return "Not Found";
+        case 405: return "Method Not Allowed";
+        case 413: return "Payload Too Large";
+        case 416: return "Range Not Satisfiable";
+        case 500: return "Internal Server Error";
+        case 504: return "Gateway Timeout";
+        default: return "Unknown";
+    }
 }
