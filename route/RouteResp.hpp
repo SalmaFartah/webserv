@@ -1,17 +1,24 @@
 #pragma once
 #include "../parse_config/inc/Fill.hpp"
+#include <sys/stat.h>
 
 class RouteResp
 {
     private:
         std::string winnerPath;
         size_t      winnerIdx;
+        std::string finalPath;
+        std::string response;
+        
     public:
         RouteResp();
         ~RouteResp();
-        void locationMatcha(serverConf *conf, ReqContent reqCon);
-        void routeCheck(serverConf *conf, ReqContent reqCon);
+        int locationMatcha(serverConf *conf, ReqContent& cont);
+        int routeCheck(serverConf *conf, ReqContent& cont);
         // void checkMethods()
+        const std::string& getResponse() const;
+        int checkDire(std::string &fullPath, serverConf *conf, locationConf& location, struct stat *st);
+        int transLower(std::string& strPath, std::string& strExt, size_t posDot);
 };
 
 

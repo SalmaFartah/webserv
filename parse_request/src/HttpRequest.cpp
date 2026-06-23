@@ -242,7 +242,9 @@ void HttpRequest::parse_request(std::string request, serverConf *conf)
 	else if (rtype == DONE)
 		std::cout << "DONE\n";
 	parseState = INHEADER;
-	route.routeCheck(conf, req);
+	if (route.routeCheck(conf, req) == -1)
+		rtype = ERROR;
+	// return route.getResponse();
 	req.headers.clear();
 	std::cout << "body: [" << req.body << "]\n";
 }

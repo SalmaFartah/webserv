@@ -1,5 +1,6 @@
 #include "loopTools.hpp"
 
+bool sign = true;
 
 loopTools::loopTools(){};
 void loopTools::close_fds()
@@ -7,6 +8,7 @@ void loopTools::close_fds()
 	for (size_t i = 0; i < vecFds.size(); i++)
 		close(vecFds[i].fd);
 }
+
 loopTools::loopTools(std::vector<serverConf>& servers) : serv_nb(0)
 {
 
@@ -92,7 +94,6 @@ void loopTools::newConnection(struct pollfd& server)
 
 	fcntl(cli_sock, F_SETFL, O_NONBLOCK);
 
-	server.revents = 0;
 	
 //	add the master then override it with new client
 	vecFds.push_back(client);
@@ -126,14 +127,22 @@ bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 	}
 	return true;
 }
-
+void signalHandler(int signal)
+{
+	(void)signal;
+	sign = false;
+}
 void loopTools::mainLoop()
 {
-    while (1)
+	signal(SIGPIPE, SIG_IGN);
+	signal(SIGINT, signalHandler);
+	signal(SIGTERM, signalHandler);
+
+    while (sign)
 	{
 		int ready = poll(vecFds.data(), vecFds.size(), 1000);
 		if (ready < 0)
-		{
+		{	
 			perror("poll: ");
 			break;
 		}
@@ -184,7 +193,7 @@ void loopTools::mainLoop()
 					}
 				}
 			}
-			else if (vecFds[i].revents & POLLIN || (!infoClie.empty() && infoClie[i - serv_nb].request.rtype == 3)) // a client want to do smth
+			else if (i >= serv_nb && (vecFds[i].revents & POLLIN || infoClie[i - serv_nb].request.rtype == 3)) // a client want to do smth
 			{
 				// handle this data on existing client
 				infoClie[i - serv_nb].clieTime = std::time(NULL);
@@ -206,6 +215,7 @@ void loopTools::mainLoop()
 
 		}
 	}
+	close_fds();
 }
 
 loopTools::~loopTools()

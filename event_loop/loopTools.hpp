@@ -15,6 +15,7 @@
 #include <cstring>
 #include "../parse_config/inc/FillServer.hpp"
 #include "../parse_request/inc/HttpRequest.hpp"
+#include <signal.h> 
 
 #define BUFFER_SZ 1000
 
