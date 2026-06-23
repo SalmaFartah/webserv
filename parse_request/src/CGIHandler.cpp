@@ -7,8 +7,6 @@
 #include <unistd.h>
 #include <iostream>
 
-
-
 std::string CGIHandler::getFileExtension(const std::string& filename)
 {
     size_t dotPos = filename.find_last_of(".");
@@ -66,6 +64,7 @@ bool CGIHandler::isCGIRequest(const std::string& requestTarget, const locationCo
     
     return extLower == configLower;
 }
+
 
 const locationConf* CGIHandler::findMatchingLocation(
     const std::string& path,
@@ -134,67 +133,115 @@ bool CGIHandler::scriptExists(const std::string& scriptPath) {
     return true;
 }
 
-std::string CGIHandler::getInterpreter(const std::string& extension) {
-    if (extension == ".php" || extension == ".php3" || extension == ".php4") {
-        return "/usr/bin/php-cgi";
-    } else if (extension == ".py" || extension == ".pyc") {
-        return "/usr/bin/python3";
-    } else if (extension == ".pl" || extension == ".cgi") {
-        return "/usr/bin/perl";
-    } else if (extension == ".rb") {
-        return "/usr/bin/ruby";
-    } else if (extension == ".sh") {
-        return "/bin/bash";
+
+
+std::string CGIHandler::getInterpreter(const std::string& scriptPath, const locationConf& loc)
+{
+   
+    if (!loc.cgi_pass.empty()) {
+        std::cout << " Interpréteur depuis cgi_pass: " << loc.cgi_pass << std::endl;
+        return loc.cgi_pass;
     }
+    
+    std::ifstream file(scriptPath.c_str());
+    if (file.is_open()) {
+        std::string firstLine;
+        std::getline(file, firstLine);
+        file.close();
+        
+        if (firstLine.size() > 2 && firstLine[0] == '#' && firstLine[1] == '!') {
+            std::string interpreter = firstLine.substr(2);
+            
+            size_t start = interpreter.find_first_not_of(" \t");
+            if (start != std::string::npos) {
+                interpreter = interpreter.substr(start);
+            }
+            
+            size_t space = interpreter.find(' ');
+            if (space != std::string::npos) {
+                interpreter = interpreter.substr(0, space);
+            }
+            
+            if (!interpreter.empty() && interpreter[interpreter.length() - 1] == '\r') {
+                interpreter = interpreter.substr(0, interpreter.length() - 1);
+            }
+            
+            if (!interpreter.empty()) {
+                std::cout << "Interpréteur depuis shebang: " << interpreter << std::endl;
+                return interpreter;
+            }
+        }
+    }
+    
+ 
+    if (access(scriptPath.c_str(), X_OK) == 0) {
+        std::cout << "Exécutable directement: " << scriptPath << std::endl;
+        return scriptPath;
+    }
+    
+    std::cout << "Aucun interpréteur trouvé pour: " << scriptPath << std::endl;
     return "";
 }
 
 std::map<std::string, std::string> CGIHandler::buildCGIEnv(
-    const HttpRequest& request,
+    const ReqContent& request,
     const locationConf& /*loc*/,
     const serverConf& srv,
     const std::string& scriptPath
 ) {
     std::map<std::string, std::string> env;
     
-    env["REQUEST_METHOD"] = request.getMethod();
-    env["QUERY_STRING"] = request.getQuery();
+  
+    env["REQUEST_METHOD"] = request.method;
+    env["QUERY_STRING"] = request.query;
+    env["SCRIPT_FILENAME"] = scriptPath;
+    env["REQUEST_URI"] = request.request_target;
+    env["PATH_INFO"] = request.request_target;
+    env["SERVER_PROTOCOL"] = "HTTP/1.1";
+    env["GATEWAY_INTERFACE"] = "CGI/1.1";
+    env["REDIRECT_STATUS"] = "200";
     
+    // Content-Length
     std::stringstream ss;
-    ss << request.getBodySize();
+    ss << request.body.size();
     env["CONTENT_LENGTH"] = ss.str();
     
-    std::string contentType = request.getHeader("content-type");
-    if (!contentType.empty())
-        env["CONTENT_TYPE"] = contentType;
+    // Content-Type
+    std::map<std::string, std::string>::const_iterator it = request.headers.find("content-type");
+    if (it != request.headers.end() && !it->second.empty()) {
+        env["CONTENT_TYPE"] = it->second;
+    }
     
-    env["SCRIPT_FILENAME"] = scriptPath;
-    env["REQUEST_URI"] = request.getTarget();
-    env["PATH_INFO"] = request.getTarget();
-    
-    if (!srv.listen.empty())
-        env["SERVER_NAME"] = srv.listen[0].first;
-    
+    // Server info
     if (!srv.listen.empty()) {
+        env["SERVER_NAME"] = srv.listen[0].first;
         std::stringstream portStr;
         portStr << srv.listen[0].second;
         env["SERVER_PORT"] = portStr.str();
     }
     
-    std::string host = request.getHeader("host");
-    if (!host.empty())
-        env["HTTP_HOST"] = host;
+    // Host
+    it = request.headers.find("host");
+    if (it != request.headers.end() && !it->second.empty()) {
+        env["HTTP_HOST"] = it->second;
+    }
     
-    std::map<std::string, std::string> allHeaders = request.getAllHeaders();
-    for (std::map<std::string, std::string>::const_iterator it = allHeaders.begin(); 
-         it != allHeaders.end(); ++it) {
-        std::string headerKey = it->first;
+    // Tous les autres headers (HTTP_*)
+    for (std::map<std::string, std::string>::const_iterator it2 = request.headers.begin();
+         it2 != request.headers.end(); ++it2) {
+        
+        // Ignorer les headers déjà traités
+        if (it2->first == "content-type" || it2->first == "content-length" || it2->first == "host") {
+            continue;
+        }
+        
+        std::string headerKey = it2->first;
         std::transform(headerKey.begin(), headerKey.end(), headerKey.begin(), ::toupper);
         for (size_t i = 0; i < headerKey.length(); ++i) {
             if (headerKey[i] == '-')
                 headerKey[i] = '_';
         }
-        env["HTTP_" + headerKey] = it->second;
+        env["HTTP_" + headerKey] = it2->second;
     }
     
     return env;
@@ -202,40 +249,58 @@ std::map<std::string, std::string> CGIHandler::buildCGIEnv(
 
 
 std::string CGIHandler::handleCGIRequest(
-    const HttpRequest& request,
+    const ReqContent& request,
     const serverConf& server
 ) {
-    std::string path = request.getTarget();
+    std::string path = request.request_target;
     
+    std::cout << "CGIHandler: Processing " << path << std::endl;
+    
+    // 1. Trouver la location
     const locationConf* loc = findMatchingLocation(path, server);
     if (!loc) {
         return buildErrorResponse(404, "Not Found");
     }
     
+    std::cout << "Location: " << loc->path << std::endl;
+    std::cout << " CGI Extension: [" << loc->cgi_extension << "]" << std::endl;
+    std::cout << "CGI Pass: [" << loc->cgi_pass << "]" << std::endl;
+    
+    // 2. Vérifier que c'est bien une requête CGI
     if (!isCGIRequest(path, *loc)) {
         return buildErrorResponse(400, "Bad Request: Not a CGI request");
     }
     
+    // 3. Obtenir le chemin absolu du script
     std::string scriptPath = getScriptPath(path, *loc, server);
+    std::cout << "Script path: " << scriptPath << std::endl;
     
+    // 4. Vérifier que le script existe
     if (!scriptExists(scriptPath)) {
         return buildErrorResponse(404, "CGI script not found");
     }
     
+    // 5.  Obtenir l'interpréteur (utilise cgi_pass)
+    std::string interpreter = getInterpreter(scriptPath, *loc);
+    if (interpreter.empty()) {
+        return buildErrorResponse(500, "No interpreter found for script");
+    }
+    std::cout << "Interpreter: " << interpreter << std::endl;
+    
+    // 6. Construire les variables d'environnement
     std::map<std::string, std::string> envVars = buildCGIEnv(request, *loc, server, scriptPath);
     
-    std::string extension = getFileExtension(scriptPath);
-    std::string interpreter = getInterpreter(extension);
-    
+    // 7. Exécuter le CGI
     CGIExecutor executor;
     CGIExecutor::CGIResult result = executor.executeCGI(
         scriptPath,
         interpreter,
         envVars,
-        request.getBody(),
-        30
+        request.body,
+        30  // Timeout en secondes
     );
     
+    // 8. Construire la réponse
     return buildCGIResponse(result);
 }
 
@@ -271,7 +336,6 @@ std::string CGIHandler::buildCGIResponse(const CGIExecutor::CGIResult& result) {
         }
     }
     
-    // Utiliser stringstream au lieu de std::to_string()
     std::stringstream ss;
     ss << body.length();
     
@@ -285,9 +349,7 @@ std::string CGIHandler::buildCGIResponse(const CGIExecutor::CGIResult& result) {
     return response;
 }
 
-// VERSION CORRIGÉE SANS std::to_string()
 std::string CGIHandler::buildErrorResponse(int code, const std::string& message) {
-    // Convertir code en string avec stringstream
     std::stringstream codeStr;
     codeStr << code;
     
