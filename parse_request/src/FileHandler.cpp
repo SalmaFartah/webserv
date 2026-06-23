@@ -46,44 +46,6 @@ std::string FileHandler::generateFilename()
 	return ss.str();
 }
 
-// Generate HTTP response HTML body
-std::string FileHandler::generateUploadResponse(int statusCode, const std::string& filename)
-{
-	std::stringstream ss;
-	
-	switch (statusCode)
-	{
-		case 201:
-			ss << "<html><body><h1>201 Created</h1>"
-			   << "<p>File uploaded successfully: " << filename << "</p>"
-			   << "</body></html>";
-			break;
-		case 400:
-			ss << "<html><body><h1>400 Bad Request</h1>"
-			   << "<p>Invalid request or missing body.</p>"
-			   << "</body></html>";
-			break;
-		case 403:
-			ss << "<html><body><h1>403 Forbidden</h1>"
-			   << "<p>Upload directory is not accessible.</p>"
-			   << "</body></html>";
-			break;
-		case 413:
-			ss << "<html><body><h1>413 Payload Too Large</h1>"
-			   << "<p>Uploaded file exceeds maximum size limit.</p>"
-			   << "</body></html>";
-			break;
-		case 500:
-			ss << "<html><body><h1>500 Internal Server Error</h1>"
-			   << "<p>Failed to save uploaded file.</p>"
-			   << "</body></html>";
-			break;
-		default:
-			ss << "<html><body><h1>Unknown Error</h1></body></html>";
-	}
-	return ss.str();
-}
-
 // Save uploaded file and return HTTP status code
 int FileHandler::handleUpload(const HttpRequest& request, const locationConf& loc)
 {
