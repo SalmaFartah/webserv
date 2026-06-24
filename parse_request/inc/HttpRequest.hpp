@@ -15,7 +15,6 @@
 class HttpRequest
 {
 		typedef std::map<std::string, std::string> headerMap;
-		ReqContent req;
 
 		std::string requestLine;
 		std::string header;
@@ -26,6 +25,8 @@ class HttpRequest
 		size_t body_size;
 		size_t current_pos;
 
+		HttpResponse resp;
+		locationConf empty;
 		bool isprintSTR(std::string);
 		bool parse_requestLine();
 		bool parse_headers();
@@ -39,6 +40,7 @@ class HttpRequest
 		bool store_header(const std::string&, const std::string&, headerMap&);
 	public:
 		HttpRequest();
+		ReqContent req;
 		int errorCode;
 		enum {INCOMPLETE, DONE, ERROR, KEEP_ALIVE} rtype;
 		std::string parse_request(std::string, serverConf *);

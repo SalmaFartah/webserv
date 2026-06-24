@@ -111,7 +111,7 @@ std::string HttpResponse::error_response(serverConf& server, locationConf& locat
 	std::string contentType, fileName;
 	std::ostringstream body;
 
-	body.str() = getErrorPage(errorCode, reason_phrase);
+	body << getErrorPage(errorCode, reason_phrase);
 	contentType = "text/html";
 	if (location.error_page.count(errorCode))
 		fileName = location.error_page[errorCode];

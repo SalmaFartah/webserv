@@ -26,7 +26,8 @@ bool HttpRequest::parse_requestLine()
 		return errorCode = 414, rtype = ERROR, false;
 
 	if ((req.method == "GET" || req.method == "POST" || req.method == "DELETE") \
-	&& req.request_target.find("/") == 0 && req.httpVersion == "HTTP/1.1")
+	&& req.request_target.find("/") == 0 && req.request_target.find("//") == std::string::npos \
+	&& req.httpVersion == "HTTP/1.1")
 		return extract_query(), true;
 	
 	return errorCode = 400, rtype = ERROR, false;
@@ -41,6 +42,8 @@ void HttpRequest::extract_query()
 		req.query = req.request_target.substr(pos + 1, req.request_target.size());
 		req.request_target = req.request_target.substr(0, pos);
 	}
+	if (req.request_target.back() == '/')
+		req.request_target = req.request_target.substr(0, req.request_target.size() - 1);
 }
 
 bool HttpRequest::isprintSTR(std::string str)
@@ -211,6 +214,7 @@ bool HttpRequest::parse_body(size_t bodyStart, std::string request)
 
 std::string HttpRequest::parse_request(std::string request, serverConf *conf)
 {
+	(void)conf;
 	request = request.substr(current_pos);
 	static size_t HeaderEnd;
 	static size_t HeaderBegin;
@@ -226,30 +230,31 @@ std::string HttpRequest::parse_request(std::string request, serverConf *conf)
 		HeaderBegin = request.find("\r\n");
 		requestLine = request.substr(0, HeaderBegin);
 		if (!parse_requestLine())
-			return "";
+			return resp.error_response(*conf, empty, 400);
 		HeaderBegin += 2;
 		header = request.substr(HeaderBegin, HeaderEnd - HeaderBegin + 2);
 		if (!header.size() || !parse_headers())
 		{
 			rtype = ERROR;
-			errorCode = 400;
-			return "";
+			return resp.error_response(*conf, empty, 400);
 		}
 		parseState = INBODY;
 	}
 	rtype = KEEP_ALIVE;
 	if (!parse_body(HeaderEnd + 4, request))
-		return "";
-	std::cout << "request-target: " << req.request_target << std::endl;
+		return resp.error_response(*conf, empty, 400);
+	// RouteResp response;
+	// if (response.routeCheck(conf, req, 0) == -1)
+		// rtype = ERROR;
+
 	parseState = INHEADER;
 	req.connection = true;
 	req.headers.clear();
-	// RouteResp response;
-	// response.routeCheck();
-	// should rerurn the response from the route..
+	
+	return ""; // should rerurn the response from the route..
 }
 
-HttpRequest::HttpRequest() : rtype(INCOMPLETE)
+HttpRequest::HttpRequest()
 {
 	rtype = INCOMPLETE;
 	current_pos = 0;
