@@ -7,7 +7,7 @@ void loopTools::close_fds()
 	for (size_t i = 0; i < vecFds.size(); i++)
 		close(vecFds[i].fd);
 }
-loopTools::loopTools(std::vector<serverConf> servers) : serv_nb(0)
+loopTools::loopTools(std::vector<serverConf> &servers) : serv_nb(0)
 {
 
 	for (size_t i = 0; i < servers.size(); i++) // EACH SERVER
@@ -64,6 +64,7 @@ loopTools::loopTools(std::vector<serverConf> servers) : serv_nb(0)
 				throw std::runtime_error("");
 			}
 			linkServConf[serverFd] = &servers[i];
+
 		}
 	}
 	
@@ -75,6 +76,7 @@ void loopTools::closeClient(int fd, int clieIdx, size_t *i)
 	vecFds.erase(vecFds.begin() + *i);
 	(*i)--;
 }
+
 void loopTools::newConnection(struct pollfd& server)
 {
 	// handle a client conenction
@@ -114,7 +116,7 @@ bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 		buffer[reading] = '\0';
 		infoClie[clieIdx].clieFile += buffer; // this one accumulate buffer
 
-        std::cout << "server read from client " << client.fd << ": \n[" << buffer << "]" << std::endl;
+        // std::cout << "server read from client " << client.fd << ": \n[" << buffer << "]" << std::endl;
 		infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf);
 	}
     else if (reading == 0) // connection closed cleanly by the client (TCP FIN)
@@ -203,7 +205,6 @@ void loopTools::mainLoop()
 				}
 					// std::cout << "rtype "<< infoClie[i - serv_nb].request.rtype << "\n";
 			}
-
 		}
 	}
 }
