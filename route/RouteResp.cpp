@@ -166,7 +166,7 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code)
             //     return -1;
             std::cout << "ITS A CGI CALL: " << finalPath.substr(posDot) << "\n";
         }
-        else if (cont.method == "POST") // respObj.error is post and not cgi 405
+        else if (cont.method == "POST") // respObj.error is post and not cgi 403
         {
             //405 Method Not Allowed
             response = respObj.error_response(*conf, conf->locations[winnerIdx], 403);
