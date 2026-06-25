@@ -9,7 +9,7 @@
 #include "../../parse_config/inc/FillServer.hpp"
 #include "../../parse_config/inc/FillLocation.hpp"
 #include "../../build_response/HttpResponse.hpp"
-// #include "../../route/RouteResp.hpp"
+#include "../../route/RouteResp.hpp"
 #define MAX_URI_LENGTH 8192
 
 class HttpRequest
@@ -18,7 +18,8 @@ class HttpRequest
 
 		std::string requestLine;
 		std::string header;
-
+		RouteResp	route;
+		
 		enum {CHUNKED, NORMAL, NONE} bodyType;
 		enum {INHEADER, INBODY} parseState;
 		enum {INSIZE, IN_CHUNK, THE_END} bodyState;
@@ -39,6 +40,7 @@ class HttpRequest
 		bool handle_chunked(std::string);
 		bool store_header(const std::string&, const std::string&, headerMap&);
 	public:
+		ReqContent req;
 		HttpRequest();
 		ReqContent req;
 		int errorCode;
