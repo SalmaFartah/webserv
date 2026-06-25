@@ -164,8 +164,10 @@ std::string HttpResponse::static_file(serverConf& serv, locationConf& loc, const
 	return build(200, body.str(), ctype, con);
 }
 
-std::string HttpResponse::directory(serverConf& serv, locationConf& loc, const std::string& path, bool con)
+std::string HttpResponse::directory(serverConf& serv, locationConf& loc, std::string path, bool con)
 {
+	if (path[path.size() - 1] != '/')
+		path += "/";
 	if (!loc.index.empty())
 	{
 		struct stat st;

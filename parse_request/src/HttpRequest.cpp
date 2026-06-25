@@ -1,11 +1,5 @@
 #include "../inc/HttpRequest.hpp"
 
-std::string YELLOW = "\033[33m";
-std::string ORANGE = "\033[38;5;208m";   // 256-color ANSI
-std::string SKY_BLUE = "\033[38;5;117m"; // "bleu ciel"
-std::string RESET = "\033[0m";
-
-
 bool HttpRequest::parse_requestLine()
 {
 	std::string buff;
@@ -42,8 +36,6 @@ void HttpRequest::extract_query()
 		req.query = req.request_target.substr(pos + 1, req.request_target.size());
 		req.request_target = req.request_target.substr(0, pos);
 	}
-	if (req.request_target.back() == '/')
-		req.request_target = req.request_target.substr(0, req.request_target.size() - 1);
 }
 
 bool HttpRequest::isprintSTR(std::string str)

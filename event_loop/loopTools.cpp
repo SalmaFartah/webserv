@@ -112,8 +112,11 @@ bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 	char buffer[BUFFER_SZ];
 	ssize_t reading = read(client.fd, buffer, sizeof(buffer) - 1); // our read is non blocking io mean if our kernel buffer is empty read will not frozen here and wait
 	if (reading < 0)
+	{
 		perror("read: ");
-	if (reading > 0)
+		closeClient(client.fd, *idx - serv_nb, idx);
+	}
+	else if (reading > 0)
 	{
 		buffer[reading] = '\0';
 		infoClie[clieIdx].clieFile += buffer; // this one accumulate buffer
@@ -179,11 +182,14 @@ void loopTools::mainLoop()
 				// std::cout << "-------------CHECK FOR POLLOUT REVENTS-----------\n";
 				ssize_t n = write(vecFds[i].fd, infoClie[i - serv_nb].resp.data() + infoClie[i - serv_nb].ofssetResp, infoClie[i - serv_nb].resp.size() - infoClie[i - serv_nb].ofssetResp);
 				if (n < 0)
+				{
 					perror("write: ");
-				else if (n > 0)
+					closeClient(vecFds[i].fd, i - serv_nb, &i);
+				}
+				if (n > 0)
 					infoClie[i - serv_nb].ofssetResp += n;
-				else if (n == 0)
-					perror("write: ");
+				if (n == 0)
+					perror("write == 0: ");
 				if (infoClie[i - serv_nb].resp.size() == infoClie[i - serv_nb].ofssetResp) // writing everything
 				{
 					vecFds[i].events = POLLIN;
@@ -209,10 +215,10 @@ void loopTools::mainLoop()
 					isconnected = existClient(vecFds[i], i - serv_nb, &i);
 				if (isconnected && infoClie[i - serv_nb].request.rtype != 0)
 				{
-					vecFds[i].events = POLLOUT;
+					vecFds[i].events = POLLIN | POLLOUT;
 					std::cout << "set to POLLOUT\n";
 				}
-					// std::cout << "rtype "<< infoClie[i - serv_nb].request.rtype << "\n";
+					std::cout << "rtype "<< infoClie[i - serv_nb].request.rtype << "\n";
 			}
 		}
 	}
