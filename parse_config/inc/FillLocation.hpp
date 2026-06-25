@@ -1,42 +1,20 @@
-
-
-#ifndef FILLLOCATION_HPP
-#define FILLLOCATION_HPP
-
+#pragma once
 #include "Fill.hpp"
-#include <vector>
-#include <string>
-#include <map>
 
 class FillLocation : public Fill
 {
-public:
-    locationConf location;
+    private:
+        std::string Directives[10]; // will store all server directives each one in index
+        void (FillLocation::*caller[10])( std::vector<std::string>, state); // the array that will store the pointers to functions
 
-    FillLocation();
-    ~FillLocation();
-
-   
-    
-    void methodsHandler(std::vector<std::string> values, state s);
-    void returnHandler(std::vector<std::string> values, state s);
-    void rootHandler(std::vector<std::string> values, state s);
-    void autoindexHandler(std::vector<std::string> values, state s);
-    void indexHandler(std::vector<std::string> values, state s);
-    void uploadHandler(std::vector<std::string> values, state s);
-    void cgiPassHandler(std::vector<std::string> values, state s);
-    void cgiExtHandler(std::vector<std::string> values, state s);
-    void BodySzHandler(std::vector<std::string> values, state s);
-    void ErrPgHandler(std::vector<std::string> values, state s);
-    
-
-    
-    void LocationFiller(std::vector<std::pair<tokenType, std::string> > tokens, size_t& pos);
-    bool directive(std::string str);
-
-private:
-    std::string Directives[10];
-    void (FillLocation::*caller[10])(std::vector<std::string>, state);
+        bool directive(std::string);
+        void methodsHandler( std::vector<std::string>, state);
+        void returnHandler( std::vector<std::string>, state);
+        void uploadHandler( std::vector<std::string>, state);
+        void cgiPassHandler( std::vector<std::string>, state);
+        void cgiExtHandler( std::vector<std::string>, state);
+    public:
+        FillLocation();
+        void LocationFiller(std::vector<std::pair<tokenType, std::string> >, size_t&);
+        ~FillLocation();
 };
-
-#endif
