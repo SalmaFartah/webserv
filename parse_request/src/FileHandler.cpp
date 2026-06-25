@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <iostream>
-#include <cstring> 
+#include <cstring>
 #include <cerrno>
 
 bool FileHandler::isUploadDirValid(const std::string& uploadDir)
@@ -16,16 +16,10 @@ bool FileHandler::isUploadDirValid(const std::string& uploadDir)
             std::cerr << "Error creating upload directory: " << strerror(errno) << std::endl;
             return false;
         }
-    } else if (!S_ISDIR(st.st_mode)) {
-        std::cerr << "Upload path exists but is not a directory" << std::endl;
-        return false;
+        return true;
     }
     
-    if (access(uploadDir.c_str(), W_OK) == -1) {
-        std::cerr << "Upload directory is not writable: " << strerror(errno) << std::endl;
-        return false;
-    }
-    return true;
+    return S_ISDIR(st.st_mode) && (access(uploadDir.c_str(), W_OK) == 0);
 }
 
 std::string FileHandler::generateFilename()
@@ -40,29 +34,26 @@ int FileHandler::handleUpload(
     const ReqContent& request,
     const locationConf& loc
 ) {
-    
     if (request.method != "POST")
         return 405;
     
-   
     if (request.body.empty())
         return 400;
     
     if (loc.body_size > 0 && request.body.size() > loc.body_size)
         return 413;
     
-
     if (loc.upload_store.empty())
         return 403;
     
     if (!isUploadDirValid(loc.upload_store))
         return 403;
     
-    std::string filename = generateFilename();
     std::string filepath = loc.upload_store;
-    if (filepath[filepath.length() - 1] != '/')
-        filepath += "/";
-    filepath += filename;
+    if (filepath[filepath.size() - 1] != '/')
+        filepath += '/';
+    
+    filepath += generateFilename();
     
     std::ofstream outFile(filepath.c_str(), std::ios::binary);
     if (!outFile.is_open()) {
@@ -70,7 +61,7 @@ int FileHandler::handleUpload(
         return 500;
     }
     
-    outFile.write(request.body.c_str(), request.body.length());
+    outFile.write(request.body.data(), request.body.size());
     if (!outFile.good()) {
         std::cerr << "Error writing to upload file: " << strerror(errno) << std::endl;
         outFile.close();
