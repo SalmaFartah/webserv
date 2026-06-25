@@ -22,7 +22,7 @@ char** CGIExecutor::mapToEnvArray(const std::map<std::string, std::string>& envV
         std::strcpy(envArray[i], envStr.c_str());
         ++i;
     }
-    envArray[envVars.size()] = NULL;  // ✅ NULL au lieu de nullptr
+    envArray[envVars.size()] = NULL;
     
     return envArray;
 }
