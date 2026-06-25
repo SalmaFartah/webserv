@@ -117,7 +117,7 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code)
     /* FINAL PATH */
     finalPath = conf->locations[winnerIdx].root + cont.request_target;
     
-    if (conf->locations[winnerIdx].root.back() == '/')
+    if (conf->locations[winnerIdx].root[conf->locations[winnerIdx].root.size() - 1] == '/')
         finalPath.erase(conf->locations[winnerIdx].root.size(), 1);
     std::cout << "FINAL PATH: " << finalPath << "\n";
 

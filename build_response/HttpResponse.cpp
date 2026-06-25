@@ -124,7 +124,7 @@ std::string HttpResponse::error_response(serverConf& server, locationConf& locat
 		if (pos && pos != std::string::npos)
 			ext = fileName.substr(pos + 1);
 		std::transform(ext.begin(), ext.end(), ext.begin(), tolower);
-		std::ifstream errFile(fileName, std::ios::binary);
+		std::ifstream errFile(fileName.c_str(), std::ios::binary);
 		if (errFile.is_open())
 		{
 			if (!MIME_table.count(ext))
@@ -149,7 +149,7 @@ std::string HttpResponse::delete_method(serverConf& serv, locationConf& loc, con
 
 std::string HttpResponse::static_file(serverConf& serv, locationConf& loc, const std::string& path, bool con)
 {
-	std::ifstream file(path, std::ios::binary);
+	std::ifstream file(path.c_str(), std::ios::binary);
 	if (!file.is_open())
 		return error_response(serv, loc, 500);
 	std::ostringstream body;

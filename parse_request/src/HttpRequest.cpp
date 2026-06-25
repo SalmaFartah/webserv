@@ -42,7 +42,7 @@ void HttpRequest::extract_query()
 		req.query = req.request_target.substr(pos + 1, req.request_target.size());
 		req.request_target = req.request_target.substr(0, pos);
 	}
-	if (req.request_target.back() == '/')
+	if (req.request_target[req.request_target.size() - 1] == '/')
 		req.request_target = req.request_target.substr(0, req.request_target.size() - 1);
 }
 
