@@ -26,12 +26,9 @@ bool HttpRequest::parse_requestLine()
 		return errorCode = 414, rtype = ERROR, false;
 
 	if ((req.method == "GET" || req.method == "POST" || req.method == "DELETE") \
-	&& req.request_target.find("/") == 0 && req.request_target.find("//") == std::string::npos\
+	&& req.request_target.find("/") == 0 && req.request_target.find("//") == std::string::npos \
 	&& req.httpVersion == "HTTP/1.1")
-	{
-		std::cout << "request_target>>>>>>>>>: [" << req.request_target << "]\n";
 		return extract_query(), true;
-	}
 	
 	return errorCode = 400, rtype = ERROR, false;
 }
@@ -45,6 +42,8 @@ void HttpRequest::extract_query()
 		req.query = req.request_target.substr(pos + 1, req.request_target.size());
 		req.request_target = req.request_target.substr(0, pos);
 	}
+	if (req.request_target.back() == '/')
+		req.request_target = req.request_target.substr(0, req.request_target.size() - 1);
 }
 
 bool HttpRequest::isprintSTR(std::string str)
@@ -230,39 +229,30 @@ std::string HttpRequest::parse_request(std::string request, serverConf *conf)
 		HeaderBegin = request.find("\r\n");
 		requestLine = request.substr(0, HeaderBegin);
 		if (!parse_requestLine())
-		{
-			route.routeCheck(conf, req, errorCode);
-			return route.getResponse();
-		}
+			return resp.error_response(*conf, empty, errorCode);
 		HeaderBegin += 2;
 		header = request.substr(HeaderBegin, HeaderEnd - HeaderBegin + 2);
 		if (!header.size() || !parse_headers())
 		{
 			rtype = ERROR;
-			errorCode = 400;
-			route.routeCheck(conf, req, errorCode);
-			return route.getResponse();
+			return resp.error_response(*conf, empty, errorCode);
 		}
 		parseState = INBODY;
 	}
 	rtype = KEEP_ALIVE;
 	if (!parse_body(HeaderEnd + 4, request))
-	{
-		route.routeCheck(conf, req, errorCode);
-		return route.getResponse();
-	}
-	std::cout << "request-target: " << req.request_target << std::endl;
-	HttpResponse resp;
-	
+		return resp.error_response(*conf, empty, errorCode);
+	if (route.routeCheck(conf, req, 0) == -1)
+		rtype = ERROR;
+
 	parseState = INHEADER;
 	req.connection = true;
 	req.headers.clear();
-	if (route.routeCheck(conf, req, 0) == -1)
-		rtype = ERROR;
-	return route.getResponse();
+	
+	return route.getResponse(); // should rerurn the response from the route..
 }
 
-HttpRequest::HttpRequest() : rtype(INCOMPLETE)
+HttpRequest::HttpRequest()
 {
 	rtype = INCOMPLETE;
 	current_pos = 0;

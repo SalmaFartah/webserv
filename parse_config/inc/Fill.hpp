@@ -32,7 +32,7 @@ typedef struct
 	std::string httpVersion;
 	std::map<std::string, std::string> headers;
 	std::string body;
-    bool        connection;
+    bool connection;
 } ReqContent;
 
 typedef struct locationConf
@@ -51,7 +51,7 @@ typedef struct locationConf
     std::string cgi_extension; // script extension: .php/.py/.pl
     std::string cgi_pass; // the executer that will run the script
     bool defaultm;
-    locationConf() // CHECK THIS LATER
+    locationConf()
     {
         methods.insert("GET");
         methods.insert("POST");
@@ -61,14 +61,6 @@ typedef struct locationConf
         body_size = 0;
         body_size_set = false;
         defaultm = true;
-        error_page[400] = "<html><body><h1>400 Bad Request</h1></body></html>";
-        error_page[403] = "<html><body><h1>403 Forbidden</h1></body></html>";
-        error_page[404] = "<html><body><h1>404 Not Found</h1></body></html>";
-        error_page[405] = "<html><body><h1>405 Method Not Allowed</h1></body></html>";
-        error_page[408] = "<html><body><h1>408 Time out</h1></body></html>";
-        error_page[413] = "<html><body><h1>413 Content Too Large</h1></body></html>";
-        error_page[500] = "<html><body><h1>500 Internal Server Error</h1></body></html>";
-        error_page[501] = "<html><body><h1>501 Not Implemented</h1></body></html>";
     };
 }   locationConf;
 
@@ -90,14 +82,6 @@ typedef struct serverConf
         body_size = 1048576;
         listen.push_back(std::make_pair("0.0.0.0", 80));
         index.push_back("index.html");
-        error_page[400] = "<html><body><h1>400 Bad Request</h1></body></html>";
-        error_page[403] = "<html><body><h1>403 Forbidden</h1></body></html>";
-        error_page[404] = "<html><body><h1>404 Not Found</h1></body></html>";
-        error_page[405] = "<html><body><h1>405 Method Not Allowed</h1></body></html>";
-        error_page[408] = "<html><body><h1>408 Time out</h1></body></html>";
-        error_page[413] = "<html><body><h1>413 Content Too Large</h1></body></html>";
-        error_page[500] = "<html><body><h1>500 Internal Server Error</h1></body></html>";
-        error_page[501] = "<html><body><h1>501 Not Implemented</h1></body></html>";
         autoindex = false;
     };
 }   serverConf;

@@ -68,8 +68,7 @@ void FillLocation::returnHandler( std::vector<std::string> values, state )
 		throw std::logic_error("Error: return: invalid status code: `" + status_code + "'");
 
 	std::string url = values[1];
-	// if (url.find_first_of("http://") && url.find_first_of("https://") && url[0] != '/')
-	if (url.find("http://") != 0 && url.find("https://") != 0)
+	if (url.find("http://") && url.find("https://") && url[0] != '/')
 		throw std::logic_error("Error: return: invalid url: `" + url + "'");
 	location.http_redire = std::make_pair(st_code, url);
 }

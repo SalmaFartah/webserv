@@ -26,6 +26,8 @@ class HttpRequest
 		size_t body_size;
 		size_t current_pos;
 
+		HttpResponse resp;
+		locationConf empty;
 		bool isprintSTR(std::string);
 		bool parse_requestLine();
 		bool parse_headers();
@@ -40,6 +42,7 @@ class HttpRequest
 	public:
 		ReqContent req;
 		HttpRequest();
+		ReqContent req;
 		int errorCode;
 		enum {INCOMPLETE, DONE, ERROR, KEEP_ALIVE} rtype;
 		std::string parse_request(std::string, serverConf *);

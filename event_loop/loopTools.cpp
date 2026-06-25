@@ -67,6 +67,7 @@ loopTools::loopTools(std::vector<serverConf>& servers) : serv_nb(0)
 				throw std::runtime_error("");
 			}
 			linkServConf[serverFd] = &servers[i];
+
 		}
 	}
 	
@@ -78,6 +79,7 @@ void loopTools::closeClient(int fd, int clieIdx, size_t *i)
 	vecFds.erase(vecFds.begin() + *i);
 	(*i)--;
 }
+
 void loopTools::newConnection(struct pollfd& server)
 {
 	// handle a client conenction
@@ -212,7 +214,6 @@ void loopTools::mainLoop()
 				}
 					// std::cout << "rtype "<< infoClie[i - serv_nb].request.rtype << "\n";
 			}
-
 		}
 	}
 	close_fds();
