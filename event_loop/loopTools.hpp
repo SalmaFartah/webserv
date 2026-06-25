@@ -16,6 +16,7 @@
 #include "../parse_config/inc/FillServer.hpp"
 #include "../parse_request/inc/HttpRequest.hpp"
 #include <signal.h> 
+#include "../route/RouteResp.hpp"
 
 #define BUFFER_SZ 1000
 
@@ -33,11 +34,13 @@ struct myclients
 class loopTools
 {
     private:
+        RouteResp realResp;
         bool isconnected;
         std::vector<struct myclients> infoClie;
         std::vector<struct pollfd> vecFds;
         size_t serv_nb;
         std::map<int, serverConf*> linkServConf;
+
     public:
         loopTools();
         loopTools(std::vector<serverConf>& servers);

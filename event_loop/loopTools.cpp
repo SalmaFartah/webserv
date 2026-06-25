@@ -20,6 +20,7 @@ loopTools::loopTools(std::vector<serverConf>& servers) : serv_nb(0)
 			if (serverFd < 0)
 			{
 				perror("socket: ");
+				close_fds();
 				throw std::runtime_error("");
 			}
 			serv_nb++;
@@ -116,7 +117,7 @@ bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 		infoClie[clieIdx].clieFile += buffer; // this one accumulate buffer
 
         std::cout << "server read from client " << client.fd << ": \n[" << buffer << "]" << std::endl;
-		infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf);
+		infoClie[clieIdx].resp  = infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf);
 	}
     else if (reading == 0) // connection closed cleanly by the client (TCP FIN)
 	{
@@ -142,19 +143,19 @@ void loopTools::mainLoop()
 	{
 		int ready = poll(vecFds.data(), vecFds.size(), 1000);
 		if (ready < 0)
-		{	
-			perror("poll: ");
 			break;
-		}
 		for (size_t i = 0; i < vecFds.size(); i++)
 		{
 			if (i >= serv_nb && !(vecFds[i].revents) && (difftime(std::time(NULL), infoClie[i - serv_nb].clieTime) > 30.0))
 			{
+				// ReqContent tmpEmpty;
 				// close the connection and fds, and remove this client and continue
 				std::cout << "-----CLIENT " << vecFds[i].fd << " TIME OUT-------\n";
 				// Note: --NO RESPONSE YET--
 				// callRespErr()
-				infoClie[i - serv_nb].resp = "HTTP/1.1 408 Request Timeout\r\nContent-Type: text/plain\r\nContent-Length: 15\r\n\r\nRequest Timeout";
+				// infoClie[i - serv_nb].resp = "HTTP/1.1 408 Request Timeout\r\nContent-Type: text/plain\r\nContent-Length: 15\r\n\r\nRequest Timeout";
+				realResp.routeCheck(infoClie[i - serv_nb].cliConf, infoClie[i - serv_nb].request.req, 408);
+				infoClie[i - serv_nb].resp = realResp.getResponse();
 				vecFds[i].events = POLLOUT;
 				continue;
 			}
@@ -199,14 +200,13 @@ void loopTools::mainLoop()
 				infoClie[i - serv_nb].clieTime = std::time(NULL);
 				if (infoClie[i - serv_nb].request.rtype == 3) // keep alive
 				{
-					infoClie[i - serv_nb].request.parse_request(infoClie[i - serv_nb].clieFile, infoClie[i - serv_nb].cliConf);
+					infoClie[i - serv_nb].resp  = infoClie[i - serv_nb].request.parse_request(infoClie[i - serv_nb].clieFile, infoClie[i - serv_nb].cliConf);
 					isconnected = true;
 				}
 				else
 					isconnected = existClient(vecFds[i], i - serv_nb, &i);
 				if (isconnected && infoClie[i - serv_nb].request.rtype != 0)
 				{
-					infoClie[i - serv_nb].resp = "HTTP/1.1 200 OK\r\nDate: Mon, 15 Jun 2026 12:00:00 GMT\r\nContent-Type: text/plain\r\nContent-Length: 2\r\nConnection: close\r\n\r\nOK";
 					vecFds[i].events = POLLOUT;
 					std::cout << "set to POLLOUT\n";
 				}

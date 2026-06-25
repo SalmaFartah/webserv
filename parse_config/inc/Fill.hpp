@@ -32,6 +32,7 @@ typedef struct
 	std::string httpVersion;
 	std::map<std::string, std::string> headers;
 	std::string body;
+    bool        connection;
 } ReqContent;
 
 typedef struct locationConf

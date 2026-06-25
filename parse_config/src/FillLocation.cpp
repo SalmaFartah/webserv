@@ -64,12 +64,12 @@ void FillLocation::returnHandler( std::vector<std::string> values, state )
 
 	char *end = NULL;
 	int st_code = std::strtol(status_code.c_str(), &end, 10);
-	if (status_code[0] == '0' || errno == ERANGE || (st_code != 301 && st_code != 302 \
-	&& st_code != 303 && st_code != 307 && st_code != 308))
+	if (status_code[0] == '0' || errno == ERANGE || (st_code != 301 && st_code != 302))
 		throw std::logic_error("Error: return: invalid status code: `" + status_code + "'");
 
 	std::string url = values[1];
-	if (url.find_first_of("http://") && url.find_first_of("https://") && url[0] != '/')
+	// if (url.find_first_of("http://") && url.find_first_of("https://") && url[0] != '/')
+	if (url.find("http://") != 0 && url.find("https://") != 0)
 		throw std::logic_error("Error: return: invalid url: `" + url + "'");
 	location.http_redire = std::make_pair(st_code, url);
 }
@@ -103,8 +103,9 @@ void FillLocation::cgiExtHandler(std::vector<std::string> values, state)
 	if (!values.size())
 		throw std::logic_error("Error: cgi_extension: missing value.");
 	std::string ext = values[0];
-	if (ext.find(".") || ext.size() < 2)
+	if (ext.find(".") || ext.size() == 1 || std::count(ext.begin() + 1, ext.end(), '.'))
 		throw std::logic_error("Error: cgi_extension: invalid extension: `" + ext + "'");
+	location.cgi_extension = ext;
 }
 
 bool FillLocation::directive(std::string str)
