@@ -109,14 +109,24 @@ void FillLocation::autoindexHandler(std::vector<std::string> values, state)
 
 void FillLocation::indexHandler(std::vector<std::string> values, state)
 {
-    if (values.size() > 1)
-        throw std::logic_error("Error: index: too many values.");
-    if (!values.size())
-        throw std::logic_error("Error: index: missing value.");
-    
+	if (values.size() > 2)
+		throw std::logic_error("Error: return: too many values.");
+	if (values.size() < 2)
+		throw std::logic_error("Error: return: missing value.");
 
-    location.index.clear();
-    location.index.push_back(values[0]);
+	std::string status_code = values[0];
+	if (!str_digit(status_code))
+		throw std::logic_error("Error: return: invalid status code: `" + status_code + "'");
+
+	char *end = NULL;
+	int st_code = std::strtol(status_code.c_str(), &end, 10);
+	if (status_code[0] == '0' || errno == ERANGE || (st_code != 301 && st_code != 302))
+		throw std::logic_error("Error: return: invalid status code: `" + status_code + "'");
+
+	std::string url = values[1];
+	if (url.find("http://") && url.find("https://") && url[0] != '/')
+		throw std::logic_error("Error: return: invalid url: `" + url + "'");
+	location.http_redire = std::make_pair(st_code, url);
 }
 
 void FillLocation::uploadHandler(std::vector<std::string> values, state)
@@ -143,26 +153,14 @@ void FillLocation::cgiPassHandler(std::vector<std::string> values, state)
 
 void FillLocation::cgiExtHandler(std::vector<std::string> values, state)
 {
-    if (values.size() > 1)
-        throw std::logic_error("Error: cgi_extension: too many values.");
-    if (!values.size())
-        throw std::logic_error("Error: cgi_extension: missing value.");
-    
-    std::string ext = values[0];
-    
-    if (ext.empty() || ext[0] != '.')
-        throw std::logic_error("Error: cgi_extension: must start with '.': `" + ext + "'");
-    
-    if (ext.find("..") != std::string::npos)
-        throw std::logic_error("Error: cgi_extension: invalid extension (double dot): `" + ext + "'");
-    
-    if (ext.length() > 10)
-        throw std::logic_error("Error: cgi_extension: extension too long: `" + ext + "'");
-    
-    //  STOCKER LA VALEUR !
-    location.cgi_extension = ext;
-    
-    std::cout << "CGI Extension SET: [" << location.cgi_extension << "]" << std::endl;
+	if (values.size() > 1)
+		throw std::logic_error("Error: cgi_extension: too many values.");
+	if (!values.size())
+		throw std::logic_error("Error: cgi_extension: missing value.");
+	std::string ext = values[0];
+	if (ext.find(".") || ext.size() == 1 || std::count(ext.begin() + 1, ext.end(), '.'))
+		throw std::logic_error("Error: cgi_extension: invalid extension: `" + ext + "'");
+	location.cgi_extension = ext;
 }
 
 void FillLocation::BodySzHandler(std::vector<std::string> values, state)
