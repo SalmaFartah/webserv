@@ -2,31 +2,26 @@
 #include <fstream>
 #include <sstream>
 #include <ctime>
-#include <cstring>
 #include <sys/stat.h>
-#include <sys/types.h>
-#include <dirent.h>
 #include <unistd.h>
-#include <cerrno>
 #include <iostream>
-
+#include <cstring> 
+#include <cerrno>
 
 bool FileHandler::isUploadDirValid(const std::string& uploadDir)
 {
-    DIR* dir = opendir(uploadDir.c_str());
-    if (!dir)
-    {
-        if (mkdir(uploadDir.c_str(), 0755) == -1)
-        {
+    struct stat st;
+    if (stat(uploadDir.c_str(), &st) != 0) {
+        if (mkdir(uploadDir.c_str(), 0755) == -1) {
             std::cerr << "Error creating upload directory: " << strerror(errno) << std::endl;
             return false;
         }
+    } else if (!S_ISDIR(st.st_mode)) {
+        std::cerr << "Upload path exists but is not a directory" << std::endl;
+        return false;
     }
-    else
-        closedir(dir);
     
-    if (access(uploadDir.c_str(), W_OK) == -1)
-    {
+    if (access(uploadDir.c_str(), W_OK) == -1) {
         std::cerr << "Upload directory is not writable: " << strerror(errno) << std::endl;
         return false;
     }
@@ -41,19 +36,22 @@ std::string FileHandler::generateFilename()
     return ss.str();
 }
 
-int FileHandler::handleUpload(const ReqContent& request, const locationConf& loc)
-{
+int FileHandler::handleUpload(
+    const ReqContent& request,
+    const locationConf& loc
+) {
+    
     if (request.method != "POST")
         return 405;
     
+   
     if (request.body.empty())
         return 400;
     
-    
-    size_t bodySize = request.body.size();
-    if (loc.body_size > 0 && bodySize > loc.body_size)
+    if (loc.body_size > 0 && request.body.size() > loc.body_size)
         return 413;
     
+
     if (loc.upload_store.empty())
         return 403;
     
@@ -62,26 +60,22 @@ int FileHandler::handleUpload(const ReqContent& request, const locationConf& loc
     
     std::string filename = generateFilename();
     std::string filepath = loc.upload_store;
-    
     if (filepath[filepath.length() - 1] != '/')
         filepath += "/";
     filepath += filename;
     
     std::ofstream outFile(filepath.c_str(), std::ios::binary);
-    if (!outFile.is_open())
-    {
+    if (!outFile.is_open()) {
         std::cerr << "Failed to create upload file: " << strerror(errno) << std::endl;
         return 500;
     }
     
     outFile.write(request.body.c_str(), request.body.length());
-    if (!outFile.good())
-    {
+    if (!outFile.good()) {
         std::cerr << "Error writing to upload file: " << strerror(errno) << std::endl;
         outFile.close();
         return 500;
     }
-    
     outFile.close();
     
     std::cout << "File uploaded successfully to: " << filepath << std::endl;
