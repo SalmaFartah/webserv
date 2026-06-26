@@ -16,7 +16,6 @@ public:
         const ReqContent& request,
         const locationConf& loc,
         const serverConf& server,
-        const locationConf& location,
         bool keepAlive
     );
     

@@ -9,6 +9,7 @@
 #include <cctype>
 
 
+
 std::string CGIHandler::getFileExtension(const std::string& filename)
 {
     size_t dotPos = filename.find_last_of('.');
@@ -16,6 +17,7 @@ std::string CGIHandler::getFileExtension(const std::string& filename)
         return "";
     return filename.substr(dotPos);
 }
+
 
 
 bool CGIHandler::isCGIRequest(const std::string& requestTarget, const locationConf& loc)
@@ -39,7 +41,6 @@ bool CGIHandler::isCGIRequest(const std::string& requestTarget, const locationCo
     
     return extLower == configLower;
 }
-
 
 
 std::map<std::string, std::string> CGIHandler::buildCGIEnv(
@@ -100,35 +101,27 @@ std::map<std::string, std::string> CGIHandler::buildCGIEnv(
 }
 
 
+
 std::string CGIHandler::buildErrorResponse(int code, const std::string& message, bool keepAlive)
 {
+
     std::stringstream codeStr;
     codeStr << code;
     
     std::string body = "<html><body><h1>Error " + codeStr.str() + "</h1>";
     body += "<p>" + message + "</p></body></html>";
     
-    std::stringstream bodyLen;
-    bodyLen << body.size();
     
-    std::string response = "HTTP/1.1 " + codeStr.str() + " " + getStatusText(code) + "\r\n";
-    response += "Content-Type: text/html\r\n";
-    response += "Content-Length: " + bodyLen.str() + "\r\n";
-    
-    if (keepAlive) {
-        response += "Connection: keep-alive\r\n";
-    } else {
-        response += "Connection: close\r\n";
-    }
-    
-    response += "\r\n";
-    response += body;
-    
-    return response;
+    HttpResponse responseBuilder;
+    return responseBuilder.build(code, body, "text/html", keepAlive);
 }
+
+
 
 std::string CGIHandler::buildCGIResponse(const CGIExecutor::CGIResult& result, bool keepAlive)
 {
+    HttpResponse responseBuilder;
+    
     if (result.statusCode != 200) {
         error = true;
         return buildErrorResponse(500, result.error, keepAlive);
@@ -138,15 +131,22 @@ std::string CGIHandler::buildCGIResponse(const CGIExecutor::CGIResult& result, b
     
     if (output.find("HTTP/") == 0 || output.find("Status:") == 0) {
         std::string response = output;
+        
         if (!keepAlive) {
             size_t pos = response.find("Connection: keep-alive");
             if (pos != std::string::npos) {
                 response.replace(pos, 22, "Connection: close");
             }
+        } else {
+            size_t pos = response.find("Connection: close");
+            if (pos != std::string::npos) {
+                response.replace(pos, 17, "Connection: keep-alive");
+            }
         }
         return response;
     }
     
+
     std::string contentType = "text/html";
     std::string body = output;
     
@@ -165,24 +165,10 @@ std::string CGIHandler::buildCGIResponse(const CGIExecutor::CGIResult& result, b
         }
     }
     
-    std::stringstream ss;
-    ss << body.size();
-    
-    std::string response = "HTTP/1.1 200 OK\r\n";
-    response += "Content-Type: " + contentType + "\r\n";
-    response += "Content-Length: " + ss.str() + "\r\n";
-    
-    if (keepAlive) {
-        response += "Connection: keep-alive\r\n";
-    } else {
-        response += "Connection: close\r\n";
-    }
-    
-    response += "\r\n";
-    response += body;
-    
-    return response;
+    return responseBuilder.build(200, body, contentType, keepAlive);
 }
+
+
 std::string CGIHandler::handleCGIRequest(
     const ReqContent& request,
     const serverConf& server,
@@ -192,10 +178,8 @@ std::string CGIHandler::handleCGIRequest(
     error = false;
     
     const std::string& path = request.request_target;
-    
     const locationConf* loc = &location;
     
-
     if (!isCGIRequest(path, *loc)) {
         error = true;
         return buildErrorResponse(400, "Bad Request: Not a CGI request", keepAlive);

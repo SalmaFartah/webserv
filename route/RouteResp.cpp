@@ -128,7 +128,6 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code)
             cont,
             conf->locations[winnerIdx],
             *conf,
-            conf->locations[winnerIdx],
             cont.connection
         );
         
