@@ -17,10 +17,10 @@ class HttpResponse
 		std::string getReasonPhrase(int);
 		std::string get_errbody(int, const std::string&, serverConf&, locationConf&, std::string&);
 		void initMimeTable();
-		std::string build(int, const std::string&, const std::string&, bool);
-	public:
+		public:
 		HttpResponse();
 		bool error;
+		std::string build(int, const std::string&, const std::string&, bool);
 		std::string redirect(int, const std::string&, bool);
 		std::string delete_method(serverConf&, locationConf&, const std::string&, bool);
 		std::string static_file(serverConf&, locationConf&, const std::string&, bool);

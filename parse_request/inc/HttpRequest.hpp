@@ -40,7 +40,6 @@ class HttpRequest
 		bool handle_chunked(std::string);
 		bool store_header(const std::string&, const std::string&, headerMap&);
 	public:
-		ReqContent req;
 		HttpRequest();
 		ReqContent req;
 		int errorCode;
