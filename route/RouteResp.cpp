@@ -1,4 +1,8 @@
 #include "RouteResp.hpp"
+#include <cerrno>    
+#include <cstring>
+#include "../parse_request/inc/CGIHandler.hpp" 
+#include "../parse_request/inc/FileHandler.hpp"  
 
 RouteResp::RouteResp() : winnerIdx(0) {}
 
@@ -32,8 +36,8 @@ int RouteResp::locationMatcha(serverConf *conf, ReqContent& cont, int code)
         return -1;
     }
     return 0;
-    
 }
+
 int RouteResp::checkDire(std::string &fullPath, serverConf *conf, locationConf& location, struct stat *st)
 {
     (void)conf;
@@ -42,19 +46,18 @@ int RouteResp::checkDire(std::string &fullPath, serverConf *conf, locationConf& 
     {
         switch (errno)
         {
-            case ENOENT: case ENOTDIR: // the file or directory does not exist at all or component of the path is not a directory
+            case ENOENT: case ENOTDIR:
                 response = respObj.error_response(*conf, location, 404);
                 std::cout << "directory or file not found call response 404 Not Found: " << winnerPath << "\n";
                 break;
-            case EACCES: // permission denied while accessing a component of the path.
+            case EACCES:
                 response = respObj.error_response(*conf, location, 403);
                 std::cout << "permission denied call response 403 Not Found: " << winnerPath << "\n";
                 break;
-            case ENAMETOOLONG: // Path name is too long
+            case ENAMETOOLONG:
                 response = respObj.error_response(*conf, location, 414);
                 std::cout << "Path name is too long call response 414 Not Found: " << winnerPath << "\n";
                 break;
-            // response = take response and set it;
         }
         return -1;
     }
@@ -69,9 +72,6 @@ int RouteResp::transLower(std::string& strPath, std::string& strExt, size_t posD
     std::transform(strPath.begin() + posDot, strPath.end(), lowerPath.begin(), tolower);
     std::transform(strExt.begin() + strExt.find_last_of("."), strExt.end(), lowerExten.begin(), tolower);
 
-    // std::cout << "final path after dot: " << lowerPath << "\n";
-    // std::cout << "cgi extension after dot: " << strExt << "\n";
-
     if (lowerPath == lowerExten)
         return 1;
     return 0;
@@ -79,7 +79,6 @@ int RouteResp::transLower(std::string& strPath, std::string& strExt, size_t posD
 
 int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code)
 {
-    /* COSTUM ERRORS*/
     if (code && cont.request_target.empty())
     {
         response = respObj.error_response(*conf, conf->locations[winnerIdx], code);
@@ -88,25 +87,23 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code)
 
     if (locationMatcha(conf, cont, code) == -1)
         return -1;
-    /* CHECK METHODS*/
+
     if (!conf->locations[winnerIdx].methods.count(cont.method))
     {
         response = respObj.error_response(*conf, conf->locations[winnerIdx], 405);
-        std::cout << "method error i must call response 405 Method Not Allowed: " << winnerIdx << "\n";
+        std::cout << "method error call response 405 Method Not Allowed: " << winnerIdx << "\n";
         return -1;
     }
     else
         std::cout << "method found it is: " << cont.method << "\n";
 
-    /* BODY SIZE */
     if (cont.body.size() > conf->locations[winnerIdx].body_size)
     {
         response = respObj.error_response(*conf, conf->locations[winnerIdx], 413);
-        std::cout << "body size error call response for 413 Payload Too Large: " << conf->locations[winnerIdx].body_size << "\n";
+        std::cout << "body size error call response 413 Payload Too Large: " << conf->locations[winnerIdx].body_size << "\n";
         return -1;
     }
 
-    /* CHECK DIRECTIVE */
     if (conf->locations[winnerIdx].http_redire.first)
     {
         response = respObj.redirect(conf->locations[winnerIdx].http_redire.first, conf->locations[winnerIdx].http_redire.second, cont.connection);
@@ -114,24 +111,35 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code)
         return 0;
     }
 
-    /* FINAL PATH */
     finalPath = conf->locations[winnerIdx].root + cont.request_target;
     
     if (conf->locations[winnerIdx].root[conf->locations[winnerIdx].root.size() - 1] == '/')
         finalPath.erase(conf->locations[winnerIdx].root.size(), 1);
     std::cout << "FINAL PATH: " << finalPath << "\n";
 
-    /* CHECK UPLOAD */
+    
     if (cont.method == "POST" && !conf->locations[winnerIdx].upload_store.empty())
     {
         std::cout << "ITS UPLOAD CALL: " << conf->locations[winnerIdx].upload_store << "\n";
-        // response = directory(std::string &fullPath, serverConf *conf, locationConf& location, cont.connection);
-        // if (error)
-        //     return -1;
+        
+        
+        FileHandler fileHandler;
+        std::string result = fileHandler.handleUpload(
+            cont,
+            conf->locations[winnerIdx],
+            *conf,
+            conf->locations[winnerIdx],
+            cont.connection
+        );
+        
+        response = result;
+        
+        if (fileHandler.error) {
+            return -1;
+        }
         return 0;
     }
-    
-    /* DIRECTORY CHECK*/
+
     struct stat st;
 
     if (checkDire(finalPath, conf, conf->locations[winnerIdx], &st) == -1)
@@ -145,7 +153,7 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code)
             return -1;
         return 0;
     }
-    if (cont.method == "GET" && S_ISDIR(st.st_mode)) // if a dire
+    if (cont.method == "GET" && S_ISDIR(st.st_mode))
     {
         std::cout << "ITS A DIRECTORY WITH GET: " << conf->locations[winnerIdx].root << "\n";
         response = respObj.directory(*conf, conf->locations[winnerIdx], finalPath, cont.connection);
@@ -154,37 +162,46 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code)
         return 0;
     }
 
-    /* CGI OR STATIC */
-    else if (S_ISREG(st.st_mode)) // POST OR DELETE AND FILE
+    
+    else if (S_ISREG(st.st_mode))
     {
         size_t posDot = finalPath.find_last_of(".");
         if (!conf->locations[winnerIdx].cgi_extension.empty() \
-        && posDot != std::string::npos && transLower(finalPath, conf->locations[winnerIdx].cgi_extension, posDot)) // if the cgi extension match the one in request target and a Dot in the last of string
+        && posDot != std::string::npos && transLower(finalPath, conf->locations[winnerIdx].cgi_extension, posDot))
         {
-            // response = cgiCall(conf, conf->locations[winnerIdx], cont);
-            // if (respObj.error)
-            //     return -1;
             std::cout << "ITS A CGI CALL: " << finalPath.substr(posDot) << "\n";
+            
+            CGIHandler cgiHandler;
+            std::string result = cgiHandler.handleCGIRequest(
+                cont,
+                *conf,
+                conf->locations[winnerIdx],
+                cont.connection
+            );
+            
+            response = result;
+            
+            if (cgiHandler.error) {
+                return -1;
+            }
+            return 0;
         }
-        else if (cont.method == "POST") // respObj.error is post and not cgi 403
+        else if (cont.method == "POST")
         {
-            //405 Method Not Allowed
             response = respObj.error_response(*conf, conf->locations[winnerIdx], 403);
             std::cout << "HERE\n";
         }
-        else if (cont.method == "GET")// static file
+        else if (cont.method == "GET")
         {
-            std::cout << "ITS A STATIC FILE CALL WITH GET: "  << "\n";
+            std::cout << "ITS A STATIC FILE CALL WITH GET: " << "\n";
             response = respObj.static_file(*conf, conf->locations[winnerIdx], finalPath, cont.connection);
         }
         if (respObj.error)
             return -1;
         return 0;
     }
-    /* POST AND FOLDER AND NOT UPLOAD */
+
     std::cout << "403 Forbidden" << "\n";
     response = respObj.error_response(*conf, conf->locations[winnerIdx], 403);
-    // 403 Forbidden
     return -1;
-    
 }
