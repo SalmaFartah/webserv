@@ -115,6 +115,7 @@ bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 	{
 		perror("read: ");
 		closeClient(client.fd, *idx - serv_nb, idx);
+		return false;
 	}
 	else if (reading > 0)
 	{
@@ -218,7 +219,6 @@ void loopTools::mainLoop()
 					vecFds[i].events = POLLIN | POLLOUT;
 					std::cout << "set to POLLOUT\n";
 				}
-					std::cout << "rtype "<< infoClie[i - serv_nb].request.rtype << "\n";
 			}
 		}
 	}
