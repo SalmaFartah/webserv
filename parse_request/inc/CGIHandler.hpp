@@ -12,12 +12,18 @@
 
 class CGIHandler {
 public:
-  
-    std::string handleCGIRequest(const ReqContent& request, const serverConf& server);
+    bool error;
     
-
+    CGIHandler() : error(false) {}
+    
+    std::string handleCGIRequest(
+        const ReqContent& request,
+        const serverConf& server,
+        const locationConf& location,
+        bool keepAlive
+    );
+    
     bool isCGIRequest(const std::string& requestTarget, const locationConf& loc);
-    
     std::string getFileExtension(const std::string& filename);
     
     std::map<std::string, std::string> buildCGIEnv(
@@ -27,11 +33,10 @@ public:
         const std::string& scriptPath
     );
     
-    std::string buildCGIResponse(const CGIExecutor::CGIResult& result);
-    std::string buildErrorResponse(int code, const std::string& message);
+    std::string buildCGIResponse(const CGIExecutor::CGIResult& result, bool keepAlive);
+    std::string buildErrorResponse(int code, const std::string& message, bool keepAlive);
     std::string getStatusText(int code);
 };
-
 #endif
 
 

@@ -3,19 +3,28 @@
 #include <map>
 #include "../inc/HttpRequest.hpp"
 #include "../../parse_config/inc/Fill.hpp"
+#include "../../build_response/HttpResponse.hpp"
 
-class FileHandler
-{
-	public:
-		// Save uploaded file from POST request
-		// Returns status code: 201 (Created), 400 (Bad Request), 403 (Forbidden), 413 (Too Large), 500 (Server Error)
-		int handleUpload(const ReqContent& request, const locationConf& loc);
-		// Generate HTTP response body for upload status
-		std::string generateUploadResponse(int statusCode, const std::string& filename);
-		
-		// Check if upload directory exists and is writable
-		bool isUploadDirValid(const std::string& uploadDir);
-		
-		// Generate a unique filename for the uploaded file
-		std::string generateFilename();
+
+class FileHandler {
+public:
+    bool error;
+    
+    FileHandler() : error(false) {}
+    
+    std::string handleUpload(
+        const ReqContent& request,
+        const locationConf& loc,
+        const serverConf& server,
+        const locationConf& location,
+        bool keepAlive
+    );
+    
+    bool isUploadDirValid(const std::string& uploadDir);
+    std::string generateFilename();
+
+private:
+
+    std::string buildErrorResponse(int code, const serverConf& server, const locationConf& location, bool keepAlive);
+    std::string buildSuccessResponse(int code, const std::string& message, bool keepAlive);
 };
