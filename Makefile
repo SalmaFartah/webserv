@@ -13,6 +13,9 @@ SRC =	main.cpp \
 		parse_request/src/HttpRequest.cpp \
 		build_response/HttpResponse.cpp \
 		event_loop/loopTools.cpp \
+		uploadCgi/src/FileHandler.cpp \
+		uploadCgi/src/CGIHandler.cpp \
+		uploadCgi/src/CGIExecutor.cpp \
 		route/RouteResp.cpp
 
 INC =	parse_config/inc/Fill.hpp \
@@ -22,6 +25,9 @@ INC =	parse_config/inc/Fill.hpp \
 		parse_request/inc/HttpRequest.hpp \
 		build_response/HttpResponse.hpp \
 		event_loop/loopTools.hpp \
+		uploadCgi/inc/FileHandler.hpp \
+		uploadCgi/inc/CGIHandler.hpp \
+		uploadCgi/inc/CGIExecutor.hpp \
 		route/RouteResp.hpp
 
 OBJ = ${SRC:.cpp=.o}

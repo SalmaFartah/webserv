@@ -95,9 +95,6 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code)
         std::cout << "method error i must call response 405 Method Not Allowed: " << winnerIdx << "\n";
         return -1;
     }
-    else
-        std::cout << "method found it is: " << cont.method << "\n";
-
     /* BODY SIZE */
     if (cont.body.size() > conf->locations[winnerIdx].body_size)
     {
@@ -125,9 +122,9 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code)
     if (cont.method == "POST" && !conf->locations[winnerIdx].upload_store.empty())
     {
         std::cout << "ITS UPLOAD CALL: " << conf->locations[winnerIdx].upload_store << "\n";
-        // response = directory(std::string &fullPath, serverConf *conf, locationConf& location, cont.connection);
-        // if (error)
-        //     return -1;
+        response = upload.handleUpload(cont, *conf, conf->locations[winnerIdx], cont.connection);
+        if (upload.error)
+            return -1;
         return 0;
     }
     
@@ -161,14 +158,15 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code)
         if (!conf->locations[winnerIdx].cgi_extension.empty() \
         && posDot != std::string::npos && transLower(finalPath, conf->locations[winnerIdx].cgi_extension, posDot)) // if the cgi extension match the one in request target and a Dot in the last of string
         {
-            // response = cgiCall(conf, conf->locations[winnerIdx], cont);
-            // if (respObj.error)
-            //     return -1;
             std::cout << "ITS A CGI CALL: " << finalPath.substr(posDot) << "\n";
+
+            response = Cgi.handleCGIRequest(cont, *conf, conf->locations[winnerIdx], cont.connection);
+            if (Cgi.error)
+                return -1;
         }
         else if (cont.method == "POST") // respObj.error is post and not cgi 403
         {
-            //405 Method Not Allowed
+            //403 Method Not Allowed
             response = respObj.error_response(*conf, conf->locations[winnerIdx], 403);
             std::cout << "HERE\n";
         }

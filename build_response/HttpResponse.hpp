@@ -16,8 +16,8 @@ class HttpResponse
 		std::string getErrorPage(int, const std::string&);
 		std::string getReasonPhrase(int);
 		void initMimeTable();
-		std::string build(int, const std::string&, const std::string&, bool);
 	public:
+		std::string build(int, const std::string&, const std::string&, bool);
 		HttpResponse();
 		bool error;
 		std::string redirect(int, const std::string&, bool);

@@ -8,6 +8,9 @@ std::string HttpResponse::getReasonPhrase(int code)
 		case 200:
 			reason_phrase = "Ok";
 			break;
+		case 201:
+			reason_phrase = "Created";
+			break;
 		case 204:
 			reason_phrase = "No Content";
 			break;
@@ -43,6 +46,9 @@ std::string HttpResponse::getReasonPhrase(int code)
 			break;
 		case 501:
 			reason_phrase = "Not Implemented";
+			break;
+		case 504:
+			reason_phrase = "Gateway Timeout";
 			break;
 	}
 	return reason_phrase;
@@ -119,6 +125,7 @@ std::string HttpResponse::error_response(serverConf& server, locationConf& locat
 		fileName = server.error_page[errorCode];
 	if (!fileName.empty())
 	{
+		std::cout << "is empty\n";
 		std::string ext("default");
 		size_t pos = fileName.find(".");
 		if (pos && pos != std::string::npos)

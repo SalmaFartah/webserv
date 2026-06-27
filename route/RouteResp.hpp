@@ -1,7 +1,6 @@
 #pragma once
-#include "../parse_config/inc/Fill.hpp"
-#include "../build_response/HttpResponse.hpp"
-
+#include "../uploadCgi/inc/FileHandler.hpp"
+#include "../uploadCgi/inc/CGIHandler.hpp"
 #include <sys/stat.h>
 
 class RouteResp
@@ -12,6 +11,8 @@ class RouteResp
         std::string finalPath;
         std::string response;
         HttpResponse respObj;
+        FileHandler  upload;
+        CGIHandler   Cgi;
     public:
         RouteResp();
         ~RouteResp();
