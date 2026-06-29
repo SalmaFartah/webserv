@@ -19,7 +19,7 @@ typedef struct CGIResult
     int         idxOut;
     int         statusCode;
     pid_t       pidChild;
-    int         idx;    // ← the client waiting for response
+    size_t      clie_fd;    // ← the client waiting for response
     int         stdinPipe;
     int         stdoutPipe;
     std::string output;       // accumulate response

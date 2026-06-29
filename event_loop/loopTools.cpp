@@ -114,7 +114,16 @@ void loopTools::addNewFd(int fd, short event)
 
 	
 }
-
+int loopTools::findClient(int fd)
+{
+	// find client by fd instead of index
+	for (size_t j = 0; j < infoClie.size(); j++)
+	{
+		if (infoClie[j].info_fd == fd)
+			return j;
+	}
+	return -1;
+}
 bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 {
 	
@@ -228,16 +237,21 @@ bool loopTools::CgiRead(CGIResult& cgiRd, size_t &i)
 	else // read == 0
 	{
 		// std::cout << "IN CGI READ = 0\n";
-		HttpRequest requestCli = infoClie[cgiRd.idx].request;
-		infoClie[cgiRd.idx].resp = requestCli.route.Cgi.buildCGIResponse(cgiRd, requestCli.req.connection);
+		std::cout << "fd clie : " << cgiRd.clie_fd << "\n";
+		int xfd = findClient(cgiRd.clie_fd);
+		HttpRequest &requestCli = infoClie[xfd].request;
+		std::cout << "idx: " << xfd << " infoClie size: " << infoClie.size() << "\n";
+		std::cout << "output size: " << cgiRd.output.size() << "\n";
+		std::cout << "output: " << cgiRd.output << "\n";
+		infoClie[xfd].resp = requestCli.route.Cgi.buildCGIResponse(cgiRd, requestCli.req.connection);
 		waitpid(cgiRd.pidChild, NULL, 0);
 		close(vecFds[i].fd); // pollin fd one
 		cgiRd.ofssetCgi = 0;
 		cgiRd.output.clear();
 		// set client to pollout
 
-		// std::cout << "index client: " << cgiRd.idx + serv_nb << "\n";
-		vecFds[cgiRd.idx + serv_nb].events = POLLOUT;
+		// std::cout << "index client: " << xfd + serv_nb << "\n";
+		vecFds[xfd + serv_nb].events = POLLIN | POLLOUT;
 		cgiMap.erase(vecFds[i].fd);
 		vecFds.erase(vecFds.begin() + i);
 	}
@@ -276,6 +290,7 @@ void loopTools::mainLoop()
 				// new client file and config
 				newClient.cliConf = linkServConf[vecFds[i].fd];
 				newClient.ofssetResp = 0;
+				newClient.info_fd = vecFds.back().fd;
 				infoClie.push_back(newClient);
 			}
 			// RESPONSE --------->
@@ -284,9 +299,10 @@ void loopTools::mainLoop()
 				CGIResult &data = cgiMap[vecFds[i].fd];
 				if (!CgiWrite(data, i)) // error in write
 				{
-					realResp.routeCheck(infoClie[data.idx].cliConf, infoClie[data.idx].request.req, 500, data);
-					infoClie[data.idx].resp = realResp.getResponse();
-					vecFds[serv_nb + data.idx].events = POLLOUT;
+					int xfd = findClient(data.clie_fd);
+					realResp.routeCheck(infoClie[xfd].cliConf, infoClie[xfd].request.req, 500, data);
+					infoClie[xfd].resp = realResp.getResponse();
+					vecFds[serv_nb + xfd].events = POLLOUT;
 				}
 			}
 			else if (i >= serv_nb && cgiMap.count(vecFds[i].fd) && vecFds[i].revents & POLLIN)
@@ -294,8 +310,9 @@ void loopTools::mainLoop()
 				CGIResult &data = cgiMap[vecFds[i].fd];
 				if (!CgiRead(data, i))
 				{
-					realResp.routeCheck(infoClie[data.idx].cliConf, infoClie[data.idx].request.req, 500, data);
-					infoClie[data.idx].resp = realResp.getResponse();
+					int xfd = findClient(data.clie_fd);
+					realResp.routeCheck(infoClie[xfd].cliConf, infoClie[xfd].request.req, 500, data);
+					infoClie[xfd].resp = realResp.getResponse();
 				}
 			}
 			else if (!cgiMap.count(vecFds[i].fd) && vecFds[i].revents & POLLOUT)
@@ -342,7 +359,7 @@ void loopTools::mainLoop()
 				if (isconnected && infoClie[i - serv_nb].request.rtype != 0 && infoClie[i - serv_nb].request.route.isCGI)
 				{
 					infoClie[i - serv_nb].request.CGIobj.start_time = std::time(NULL);
-					infoClie[i - serv_nb].request.CGIobj.idx = i - serv_nb;
+					infoClie[i - serv_nb].request.CGIobj.clie_fd = vecFds[i].fd;
 					addNewFd(infoClie[i - serv_nb].request.CGIobj.stdinPipe, POLLOUT);
 					addNewFd(infoClie[i - serv_nb].request.CGIobj.stdoutPipe, POLLIN);
 					infoClie[i - serv_nb].request.CGIobj.idxIn = i + 1;
