@@ -15,8 +15,6 @@
 enum state { LOCATION, SERVER };
 typedef struct CGIResult
 {
-    int         idxIn;
-    int         idxOut;
     int         statusCode;
     pid_t       pidChild;
     size_t      clie_fd;    // ← the client waiting for response

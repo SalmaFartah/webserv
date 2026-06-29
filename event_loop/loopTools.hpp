@@ -25,7 +25,7 @@ struct myclients
     std::string clieFile;
     serverConf  *cliConf;
     std::time_t clieTime;
-    int      info_fd;
+    int         info_fd;
     HttpRequest request;
     std::string resp;
     size_t      ofssetResp;
@@ -55,6 +55,8 @@ class loopTools
         bool CgiRead(CGIResult& cgiRd, size_t &i);
         // void closeCgi(CGIResult& cgi, int fd, size_t &i);
         int findClient(int fd);
+        int findInVec(int fd);
+        void CgiTimout();
         ~loopTools();
 };
 
