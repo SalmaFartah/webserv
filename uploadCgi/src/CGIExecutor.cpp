@@ -74,25 +74,23 @@ std::string CGIExecutor::readWithTimeout(int fd, int childid, size_t timeout)
     return result;
 }
 
-CGIExecutor::CGIResult CGIExecutor::executeCGI(const std::string& scriptPath, const std::string& cgi_pass, const std::map<std::string, std::string>& envVars, const std::string& requestBody, size_t timeout)
+void CGIExecutor::executeCGI(const std::string& scriptPath, const std::string& cgi_pass, const std::map<std::string, std::string>& envVars, const std::string& requestBody, CGIResult& CgiRes)
 {
-    CGIResult result;
-
     int stdinPipe[2];
     int stdoutPipe[2];
     
     if (pipe(stdinPipe) == -1 || pipe(stdoutPipe) == -1)
     {
-        result.statusCode = 500;
-        return result;
+        CgiRes.statusCode = 500;
+        // return result;
     }
     // fcntl(stdinPipe[0], F_SETFL, O_NONBLOCK);
     pid_t pid = fork();
 
     if (pid == -1)
     {
-        result.statusCode = 500;
-        return result;
+        CgiRes.statusCode = 500;
+        // return result;
     }
     
     if (pid == 0)
@@ -123,23 +121,28 @@ CGIExecutor::CGIResult CGIExecutor::executeCGI(const std::string& scriptPath, co
     // Processus parent
     close(stdinPipe[0]);
     close(stdoutPipe[1]);
-    
-    if (!requestBody.empty())
-        write(stdinPipe[1], requestBody.c_str(), requestBody.size());
+    CgiRes.stdinPipe = stdinPipe[1];
+    CgiRes.stdoutPipe = stdoutPipe[0];
+    CgiRes.pidChild = pid;
+    CgiRes.body = requestBody;
+    CgiRes.ofssetCgi = 0;
+    // std::cout << "In EXECUTE " << CgiRes.body << "\n";
+    // if (!requestBody.empty())
+    //     write(stdinPipe[1], requestBody.c_str(), requestBody.size());
 
-    close(stdinPipe[1]);
+    // close(stdinPipe[1]);
     
-    result.output = readWithTimeout(stdoutPipe[0], pid, timeout);
-    close(stdoutPipe[0]);
+    // result.output = readWithTimeout(stdoutPipe[0], pid, timeout);
+    // close(stdoutPipe[0]);
 
-    int childStatus;
-    waitpid(pid, &childStatus, 0);
+    // int childStatus;
+    // waitpid(pid, &childStatus, 0);
     
-    if (WIFEXITED(childStatus) && WEXITSTATUS(childStatus) == 0) 
-        result.statusCode = 200;
-    else if (WIFSIGNALED(childStatus) && WTERMSIG(childStatus) == 9)
-        result.statusCode = 504;
-    else
-        result.statusCode = 500;
-    return result;
+    // if (WIFEXITED(childStatus) && WEXITSTATUS(childStatus) == 0) 
+    //     result.statusCode = 200;
+    // else if (WIFSIGNALED(childStatus) && WTERMSIG(childStatus) == 9)
+    //     result.statusCode = 504;
+    // else
+    //     result.statusCode = 500;
+    // return result;
 }

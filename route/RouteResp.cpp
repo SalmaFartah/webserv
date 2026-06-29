@@ -1,6 +1,6 @@
 #include "RouteResp.hpp"
 
-RouteResp::RouteResp() : winnerIdx(0) {}
+RouteResp::RouteResp() : winnerIdx(0), isCGI(false) {}
 
 RouteResp::~RouteResp(){}
 
@@ -77,7 +77,7 @@ int RouteResp::transLower(std::string& strPath, std::string& strExt, size_t posD
     return 0;
 }
 
-int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code)
+int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResult& CgiRes)
 {
     /* COSTUM ERRORS*/
     if (code && cont.request_target.empty())
@@ -160,9 +160,13 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code)
         {
             std::cout << "ITS A CGI CALL: " << finalPath.substr(posDot) << "\n";
 
-            response = Cgi.handleCGIRequest(cont, *conf, conf->locations[winnerIdx], cont.connection);
-            if (Cgi.error)
+            Cgi.handleCGIRequest(cont, *conf, conf->locations[winnerIdx], CgiRes);
+            if (CgiRes.statusCode == 500)
+            {
+                response = respObj.error_response(*conf, conf->locations[winnerIdx], 500);
                 return -1;
+            }
+            isCGI = true;
         }
         else if (cont.method == "POST") // respObj.error is post and not cgi 403
         {

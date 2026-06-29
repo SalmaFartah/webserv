@@ -216,25 +216,29 @@ std::string HttpRequest::parse_request(std::string request, serverConf *conf)
 		if (HeaderEnd == std::string::npos)
 		{
 			rtype = INCOMPLETE;
+			std::cout << "INCOMPLETE\n";
 			return "";
 		}
 		HeaderBegin = request.find("\r\n");
 		requestLine = request.substr(0, HeaderBegin);
 		if (!parse_requestLine())
+		{
+			std::cout << "ERROR\n";
 			return resp.error_response(*conf, empty, errorCode);
+		}
 		HeaderBegin += 2;
 		header = request.substr(HeaderBegin, HeaderEnd - HeaderBegin + 2);
 		if (!header.size() || !parse_headers())
 		{
 			rtype = ERROR;
-			return resp.error_response(*conf, empty, errorCode);
+			return resp.error_response(*conf, empty, 400);
 		}
 		parseState = INBODY;
 	}
 	rtype = KEEP_ALIVE;
 	if (!parse_body(HeaderEnd + 4, request))
 		return resp.error_response(*conf, empty, errorCode);
-	if (route.routeCheck(conf, req, 0) == -1)
+	if (route.routeCheck(conf, req, 0, CGIobj) == -1)
 		rtype = ERROR;
 
 	parseState = INHEADER;

@@ -52,10 +52,8 @@ std::map<std::string, std::string> CGIHandler::buildCGIEnv(ReqContent& request, 
 }
 
 
-std::string CGIHandler::buildCGIResponse(const CGIExecutor::CGIResult& result, bool keepAlive)
+std::string CGIHandler::buildCGIResponse(const CGIResult& result, bool keepAlive)
 {
-    HttpResponse responseBuilder;
-
     const std::string& output = result.output;
     if (output.find("HTTP/") == 0 || output.find("Status:") == 0) 
     {
@@ -94,14 +92,14 @@ std::string CGIHandler::buildCGIResponse(const CGIExecutor::CGIResult& result, b
             body = output.substr(endLine + 2);
         }
     }
-    
+    std::cout << "body response: " << body << "\n";
     return responseBuilder.build(200, body, contentType, keepAlive);
 }
 
 
-std::string CGIHandler::handleCGIRequest(ReqContent& request, serverConf& server, locationConf& location, bool keepAlive)
+void CGIHandler::handleCGIRequest(ReqContent& request, serverConf& server, locationConf& location, CGIResult& CgiRes)
 {
-    error = false;
+    // error = false;
         
     /*FORM THE SCRIPT PATH*/
     std::string scriptPath = location.root + request.request_target;
@@ -110,9 +108,9 @@ std::string CGIHandler::handleCGIRequest(ReqContent& request, serverConf& server
     std::map<std::string, std::string> envVars = buildCGIEnv(request, location, server, scriptPath);
 
     /*EXECUTION*/
-    CGIExecutor::CGIResult result = executor.executeCGI(scriptPath, location.cgi_pass, envVars, request.body, 30);
+    executor.executeCGI(scriptPath, location.cgi_pass, envVars, request.body, CgiRes);
 
-    if (result.statusCode != 200)
-        return error = true, responseBuilder.error_response(server, location, result.statusCode);
-    return buildCGIResponse(result, keepAlive);
+    // if (result.statusCode != 200)
+    //     return error = true, responseBuilder.error_response(server, location, result.statusCode);
+    // return buildCGIResponse(result, keepAlive);
 }

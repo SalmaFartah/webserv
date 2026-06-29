@@ -316,6 +316,8 @@ void checkPortConflict(std::vector<serverConf> conf)
 	}
 }
 
+CGIResult::CGIResult(): statusCode(false), ofssetCgi(0){}
+
 Fill::Fill(){}
 
 Fill::~Fill(){}

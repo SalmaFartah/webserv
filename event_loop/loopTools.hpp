@@ -37,10 +37,11 @@ class loopTools
         RouteResp realResp;
         bool isconnected;
         std::vector<struct myclients> infoClie;
+        std::map<int, struct CGIResult> cgiMap;
         std::vector<struct pollfd> vecFds;
         size_t serv_nb;
         std::map<int, serverConf*> linkServConf;
-
+        void addNewFd(int fd, short event);
     public:
         loopTools();
         loopTools(std::vector<serverConf>& servers);
@@ -49,6 +50,9 @@ class loopTools
         bool existClient(struct pollfd& client, int clieIdx, size_t *idx);
         void close_fds();
         void closeClient(int fd, int clieIdx, size_t *i);
+        bool CgiWrite(CGIResult& cgiWr, size_t &i);
+        bool CgiRead(CGIResult& cgiRd, size_t &i);
+        void closeCgi(CGIResult& cgi, int fd, size_t &i);
         ~loopTools();
 };
 

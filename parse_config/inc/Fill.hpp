@@ -13,6 +13,21 @@
 #include "parse.hpp"
 
 enum state { LOCATION, SERVER };
+typedef struct CGIResult
+{
+    int         idxIn;
+    int         idxOut;
+    int         statusCode;
+    pid_t       pidChild;
+    int         idx;    // ← the client waiting for response
+    int         stdinPipe;
+    int         stdoutPipe;
+    std::string output;       // accumulate response
+    std::string body;         // body to write to script
+    size_t      ofssetCgi; // how much of body sent so far
+    std::time_t start_time;
+    CGIResult();
+} CGIResult;
 
 struct HasPort
 {

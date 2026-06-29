@@ -3,17 +3,12 @@
 
 #include <map>
 #include <string>
+#include "../../parse_config/inc/Fill.hpp"
 
 class CGIExecutor
 {
     public:
-        struct CGIResult
-        {
-            int statusCode;
-            std::string output;
-        };
-        
-        CGIResult executeCGI(const std::string& scriptPath, const std::string& cgi_pass, const std::map<std::string, std::string>& envVars, const std::string& requestBody, size_t timeout);
+        void executeCGI(const std::string& scriptPath, const std::string& cgi_pass, const std::map<std::string, std::string>& envVars, const std::string& requestBody, CGIResult& CgiRes);
 
     private:
         static char** mapToEnvArray(const std::map<std::string, std::string>& envVars);

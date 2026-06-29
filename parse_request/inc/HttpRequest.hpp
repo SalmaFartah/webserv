@@ -18,7 +18,6 @@ class HttpRequest
 
 		std::string requestLine;
 		std::string header;
-		RouteResp	route;
 		
 		enum {CHUNKED, NORMAL, NONE} bodyType;
 		enum {INHEADER, INBODY} parseState;
@@ -40,7 +39,9 @@ class HttpRequest
 		bool handle_chunked(std::string);
 		bool store_header(const std::string&, const std::string&, headerMap&);
 	public:
+		CGIResult CGIobj;
 		HttpRequest();
+		RouteResp	route;
 		ReqContent req;
 		int errorCode;
 		enum {INCOMPLETE, DONE, ERROR, KEEP_ALIVE} rtype;

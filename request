@@ -13,14 +13,14 @@ Content-Length: 180\r\n
 \r\n
 
 
-POST /../../upload HTTP/1.1\r\n
+POST /upload HTTP/1.1\r\n
 Host: localhost:8080\r\n
 Content-Type: text/plain\r\n
 Connection: keep-alive\r\n
 Content-Length: 28\r\n
 \r\n
 ContentContentContentContent
-POST /upload HTTP/1.1\r\n
+POST /cgi/script.py HTTP/1.1\r\n
 Host: localhost:8080\r\n
 Connection: keep-alive\r\n
 Content-Type: text/plain\r\n
