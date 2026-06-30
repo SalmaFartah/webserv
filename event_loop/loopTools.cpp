@@ -78,6 +78,7 @@ void signalHandler(int signal)
 	(void)signal;
 	sign = false;
 }
+
 void loopTools::closeClient(int fd, int clieIdx, size_t *i)
 {
 	close(fd);
@@ -120,6 +121,7 @@ void loopTools::addNewFd(int fd, short event)
 
 	
 }
+
 int loopTools::findClient(int fd)
 {
 	// find client by fd instead of index
@@ -130,6 +132,7 @@ int loopTools::findClient(int fd)
 	}
 	return -1;
 }
+
 int loopTools::findInVec(int fd)
 {
 	// find client by fd instead of index
@@ -143,13 +146,12 @@ int loopTools::findInVec(int fd)
 
 bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 {
-	
 	char buffer[BUFFER_SZ];
 	ssize_t reading = read(client.fd, buffer, sizeof(buffer) - 1); // our read is non blocking io mean if our kernel buffer is empty read will not frozen here and wait
 	if (reading < 0)
 	{
 		perror("read: ");
-		closeClient(client.fd, *idx - serv_nb, idx);
+		closeClient(client.fd, clieIdx, idx);
 		return false;
 	}
 	else if (reading > 0)
@@ -191,7 +193,7 @@ bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 		}
 		
 		// std::cout << "MY CLIENT FILES:  \n" << infoClie[clieIdx].clieFile << std::endl;
-		closeClient(client.fd, *idx - serv_nb, idx);
+		closeClient(client.fd, clieIdx, idx);
 		return false;
 	}
 	return true;
@@ -200,21 +202,28 @@ bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 
 bool loopTools::CgiWrite(CGIResult& cgiWr, size_t &i)
 {
-	std::cout << ">>>>>>>>>HERE\n";
-	std::cout << "In EXECUTE " << cgiWr.body << "\n";
+	// std::cout << ">>>>>>>>>HERE\n";
+	// std::cout << "In EXECUTE " << cgiWr.body << "\n";
 	ssize_t n = write(vecFds[i].fd, cgiWr.body.data() + cgiWr.ofssetCgi, cgiWr.body.size() - cgiWr.ofssetCgi);
 	if (n < 0)
 	{
+		int cliVec = findInVec(cgiWr.clie_fd);
+		int xfd = findClient(cgiWr.clie_fd);
 		perror("write: ");
 		kill(cgiWr.pidChild, SIGKILL);
+		waitpid(cgiWr.pidChild, NULL, 0);
 		close(vecFds[i].fd); // pollout fd one
 		close(vecFds[i + 1].fd); // pollin fd one
-		vecFds.erase(vecFds.begin() + i); // pollout one 
-		vecFds.erase(vecFds.begin() + i); // pollin one
 		// cgiWr.ofssetCgi = 0;
 		// cgiWr.output.clear();
+		realResp.routeCheck(infoClie[xfd].cliConf, infoClie[xfd].request.req, 500, cgiWr);
+		infoClie[xfd].resp = realResp.getResponse();
+
 		cgiMap.erase(vecFds[i].fd);
 		cgiMap.erase(vecFds[i + 1].fd); // pollin fd one
+		vecFds.erase(vecFds.begin() + i); // pollout one 
+		vecFds.erase(vecFds.begin() + i); // pollin one
+		vecFds[cliVec].events = POLLIN | POLLOUT;
 		i -= 2;
 		return false;
 	}
@@ -222,14 +231,10 @@ bool loopTools::CgiWrite(CGIResult& cgiWr, size_t &i)
 		cgiWr.ofssetCgi += n;
 	if (n == 0)
 	{
-		std::cout << "in cgiwrite >>\n";
 		perror("writeCgi: ");
 	}
 	if (cgiWr.body.size() == cgiWr.ofssetCgi) // writing everything
 	{
-		std::cout << "cgiWrite read all\n";
-		std::cout << "fd in cgiwrite: " << vecFds[i].fd << "\n";
-		std::cout << "index cgiWrite: " << i << "\n";
 		close(vecFds[i].fd);
 		cgiMap.erase(vecFds[i].fd);
 		vecFds.erase(vecFds.begin() + i);
@@ -240,18 +245,27 @@ bool loopTools::CgiWrite(CGIResult& cgiWr, size_t &i)
 
 bool loopTools::CgiRead(CGIResult& cgiRd, size_t &i)
 {
+	int cliIdx = findInVec(cgiRd.clie_fd);
+	int xfd = findClient(cgiRd.clie_fd);
 	char buffer[BUFFER_SZ];
-		std::cout << "IN CGI READ\n";
 	ssize_t reading = read(vecFds[i].fd, buffer, sizeof(buffer)); // our read is non blocking io mean if our kernel buffer is empty read will not frozen here and wait
 	if (reading < 0)
 	{
+
 		perror("read: ");
+		// std::cout << "IN READ TEST>>>>>>>>>\n";
 		kill(cgiRd.pidChild, SIGKILL);
+		waitpid(cgiRd.pidChild, NULL, 0);
 		close(vecFds[i].fd); // pollin fd one
-		vecFds.erase(vecFds.begin() + i);
 		cgiRd.ofssetCgi = 0;
 		cgiRd.output.clear();
 		cgiMap.erase(vecFds[i].fd);
+		vecFds.erase(vecFds.begin() + i);
+
+		if (cliIdx != -1)
+    		vecFds[cliIdx].events = POLLIN | POLLOUT;
+		realResp.routeCheck(infoClie[xfd].cliConf, infoClie[xfd].request.req, 500, cgiRd);
+		infoClie[xfd].resp = realResp.getResponse();
 		i--;
 		return false;
 	}
@@ -261,22 +275,24 @@ bool loopTools::CgiRead(CGIResult& cgiRd, size_t &i)
 	}
 	else // read == 0
 	{
-		// std::cout << "IN CGI READ = 0\n";
-		std::cout << "fd clie : " << cgiRd.clie_fd << "\n";
-		int xfd = findClient(cgiRd.clie_fd);
 		HttpRequest &requestCli = infoClie[xfd].request;
-		std::cout << "idx: " << xfd << " infoClie size: " << infoClie.size() << "\n";
-		std::cout << "output size: " << cgiRd.output.size() << "\n";
-		std::cout << "output: " << cgiRd.output << "\n";
-		infoClie[xfd].resp = requestCli.route.Cgi.buildCGIResponse(cgiRd, requestCli.req.connection);
-		waitpid(cgiRd.pidChild, NULL, 0);
+		int childStatus;
+		waitpid(cgiRd.pidChild, &childStatus, 0);
+		if (WIFEXITED(childStatus) && WEXITSTATUS(childStatus) == 0) 
+			infoClie[xfd].resp = requestCli.route.Cgi.buildCGIResponse(cgiRd, requestCli.req.connection);
+    	else
+		{
+			std::cout << "SIGNAL COMMING : \n";
+			realResp.routeCheck(infoClie[xfd].cliConf, infoClie[xfd].request.req, 502, cgiRd);
+			infoClie[xfd].resp = realResp.getResponse();
+
+		}
 		close(vecFds[i].fd); // pollin fd one
-		cgiRd.ofssetCgi = 0;
-		cgiRd.output.clear();
+		// cgiRd.ofssetCgi = 0;
+		// cgiRd.output.clear();
 		// set client to pollout
 
 		// std::cout << "index client: " << xfd + serv_nb << "\n";
-		int cliIdx = findInVec(cgiRd.clie_fd);
 		if (cliIdx != -1)
     		vecFds[cliIdx].events = POLLIN | POLLOUT;
 		cgiMap.erase(vecFds[i].fd);
@@ -293,14 +309,13 @@ void loopTools::CgiTimout()
 	{
 		if (difftime(std::time(NULL), it->second.start_time) > 15)
 		{
-
 			int inIdx  = findInVec(it->second.stdinPipe);
 			int outIdx = findInVec(it->second.stdoutPipe);
 			int xfd    = findClient(it->second.clie_fd);
 			int cliIdx = findInVec(it->second.clie_fd);
 
-			std::cout << "TIMEOUT → key: " << it->first << " clie_fd: " << it->second.clie_fd \
-			<< " xfd: " << xfd << " cliIdx: " << cliIdx << "\n";
+			// std::cout << "TIMEOUT → key: " << it->first << " clie_fd: " << it->second.clie_fd \
+			// << " xfd: " << xfd << " cliIdx: " << cliIdx << "\n";
 			kill(it->second.pidChild, SIGKILL);
 			waitpid(it->second.pidChild, NULL, 0);
 			if (cgiMap.count(it->second.stdinPipe))
@@ -314,7 +329,7 @@ void loopTools::CgiTimout()
 
 			if (cliIdx != -1)
 			{
-				std::cout << ">>>>>>>>>>>>>>>>>>>clie fd: " << it->second.clie_fd << "\n";
+				// std::cout << ">>>>>>>>>>>>>>>>>>>clie fd: " << it->second.clie_fd << "\n";
 				vecFds[cliIdx].events = POLLIN | POLLOUT;
 			}
 
@@ -338,6 +353,24 @@ void loopTools::CgiTimout()
 		else
 			++it;
 	}
+}
+
+void loopTools::shutdownCGI()
+{
+    std::map<int, CGIResult>::iterator it = cgiMap.begin();
+    while (it != cgiMap.end())
+    {
+        // process only once per client (avoid double kill)
+        if (it->first == it->second.stdoutPipe)
+        {
+            kill(it->second.pidChild, SIGKILL);
+            waitpid(it->second.pidChild, NULL, 0); // ok to block here, shutting down anyway
+            close(it->second.stdinPipe);
+            close(it->second.stdoutPipe);
+        }
+        ++it;
+    }
+    cgiMap.clear();
 }
 
 void loopTools::mainLoop()
@@ -383,23 +416,12 @@ void loopTools::mainLoop()
 			else if (i >= serv_nb && cgiMap.count(vecFds[i].fd) && vecFds[i].revents & POLLOUT)
 			{
 				CGIResult &data = cgiMap[vecFds[i].fd];
-				if (!CgiWrite(data, i)) // error in write
-				{
-					int xfd = findClient(data.clie_fd);
-					realResp.routeCheck(infoClie[xfd].cliConf, infoClie[xfd].request.req, 500, data);
-					infoClie[xfd].resp = realResp.getResponse();
-					vecFds[serv_nb + xfd].events = POLLOUT;
-				}
+				CgiWrite(data, i);
 			}
 			else if (i >= serv_nb && cgiMap.count(vecFds[i].fd) && vecFds[i].revents & POLLIN)
 			{
 				CGIResult &data = cgiMap[vecFds[i].fd];
-				if (!CgiRead(data, i))
-				{
-					int xfd = findClient(data.clie_fd);
-					realResp.routeCheck(infoClie[xfd].cliConf, infoClie[xfd].request.req, 500, data);
-					infoClie[xfd].resp = realResp.getResponse();
-				}
+				CgiRead(data, i);
 			}
 			else if (newidx != -1 && !cgiMap.count(vecFds[i].fd) && vecFds[i].revents & POLLOUT)
 			{
@@ -450,6 +472,7 @@ void loopTools::mainLoop()
 					addNewFd(infoClie[newidx].request.CGIobj.stdoutPipe, POLLIN);
 					cgiMap[infoClie[newidx].request.CGIobj.stdinPipe] = infoClie[newidx].request.CGIobj;
 					cgiMap[infoClie[newidx].request.CGIobj.stdoutPipe] = infoClie[newidx].request.CGIobj;
+					infoClie[newidx].request.CGIobj.cntFork++;
 				}
 				else if (isconnected && infoClie[newidx].request.rtype != 0)
 				{
@@ -459,6 +482,7 @@ void loopTools::mainLoop()
 			}
 		}
 	}
+	shutdownCGI();
 	close_fds();
 }
 

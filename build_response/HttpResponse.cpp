@@ -47,6 +47,11 @@ std::string HttpResponse::getReasonPhrase(int code)
 		case 501:
 			reason_phrase = "Not Implemented";
 			break;
+		case 502:
+			reason_phrase = "Bad Gateway";
+			break;
+		case 503:
+			reason_phrase = "Service Unavailable";
 		case 504:
 			reason_phrase = "Gateway Timeout";
 			break;

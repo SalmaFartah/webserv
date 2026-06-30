@@ -17,7 +17,6 @@
 #include "../parse_request/inc/HttpRequest.hpp"
 #include <signal.h> 
 #include "../route/RouteResp.hpp"
-
 #define BUFFER_SZ 1000
 
 struct myclients
@@ -57,6 +56,7 @@ class loopTools
         int findClient(int fd);
         int findInVec(int fd);
         void CgiTimout();
+        void shutdownCGI();
         ~loopTools();
 };
 

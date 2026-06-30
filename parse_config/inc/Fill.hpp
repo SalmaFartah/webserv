@@ -11,10 +11,12 @@
 #include <arpa/inet.h>
 #include <algorithm>
 #include "parse.hpp"
+#define MAX_CGI_PROCESSES 10
 
 enum state { LOCATION, SERVER };
 typedef struct CGIResult
 {
+    int         cntFork;
     int         statusCode;
     pid_t       pidChild;
     size_t      clie_fd;    // ← the client waiting for response

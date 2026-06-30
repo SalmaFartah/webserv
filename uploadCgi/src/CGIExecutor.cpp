@@ -76,13 +76,23 @@ std::string CGIExecutor::readWithTimeout(int fd, int childid, size_t timeout)
 
 void CGIExecutor::executeCGI(const std::string& scriptPath, const std::string& cgi_pass, const std::map<std::string, std::string>& envVars, const std::string& requestBody, CGIResult& CgiRes)
 {
+    if (CgiRes.cntFork >= MAX_CGI_PROCESSES)
+    {
+        CgiRes.statusCode = 503;
+        return ;
+    }
+    if (CgiRes.cntFork == 10)
+    {
+        std::cout << "10 FORKS\n";
+        pause();
+    }
     int stdinPipe[2];
     int stdoutPipe[2];
     
     if (pipe(stdinPipe) == -1 || pipe(stdoutPipe) == -1)
     {
         CgiRes.statusCode = 500;
-        // return result;
+        return ;
     }
     // fcntl(stdinPipe[0], F_SETFL, O_NONBLOCK);
     pid_t pid = fork();
@@ -90,12 +100,11 @@ void CGIExecutor::executeCGI(const std::string& scriptPath, const std::string& c
     if (pid == -1)
     {
         CgiRes.statusCode = 500;
-        // return result;
+        return ;
     }
     
     if (pid == 0)
     {
-        // child process
         close(stdinPipe[1]);
         close(stdoutPipe[0]);
         

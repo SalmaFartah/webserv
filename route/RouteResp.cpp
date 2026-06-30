@@ -161,9 +161,9 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResul
             std::cout << "ITS A CGI CALL: " << finalPath.substr(posDot) << "\n";
 
             Cgi.handleCGIRequest(cont, *conf, conf->locations[winnerIdx], CgiRes);
-            if (CgiRes.statusCode == 500)
+            if (CgiRes.statusCode)
             {
-                response = respObj.error_response(*conf, conf->locations[winnerIdx], 500);
+                response = respObj.error_response(*conf, conf->locations[winnerIdx], CgiRes.statusCode);
                 return -1;
             }
             isCGI = true;
