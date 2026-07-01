@@ -22,7 +22,7 @@ class HttpRequest
 		enum {CHUNKED, NORMAL, NONE} bodyType;
 		enum {INHEADER, INBODY} parseState;
 		enum {INSIZE, IN_CHUNK, THE_END} bodyState;
-		size_t body_size;
+		size_t content_length;
 		size_t current_pos;
 
 		HttpResponse resp;

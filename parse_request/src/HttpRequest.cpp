@@ -52,7 +52,7 @@ bool HttpRequest::invalid_value(std::string value)
 {
 	errno = 0;
 	char *end = NULL;
-	body_size = strtoul(value.c_str(), &end, 10);
+	content_length = strtoul(value.c_str(), &end, 10);
 	if (value[0] == '-' || value[0] == '+' || errno == ERANGE || *end)
 		return true;
 	return false;
@@ -117,6 +117,8 @@ bool HttpRequest::parse_headers()
 			return false;
 		startLine = eofLine + 2;
 	}
+	std::cout << "CONTENT LENGTH: >>> " << req.headers["content-length"] << "\n";
+	// pause();
 	if (!req.headers.count("host") \
 	|| (req.headers.count("content-length") \
 	&& req.headers.count("transfer-encoding")))
@@ -187,26 +189,36 @@ bool HttpRequest::handle_chunked(std::string bodyreq)
 
 bool HttpRequest::parse_body(size_t bodyStart, std::string request)
 {
-	current_pos += bodyStart;
+	// current_pos += bodyStart;
 	if (bodyType == NORMAL)
 	{
 		req.body = request.substr(bodyStart);
-		if (req.body.size() < body_size)
+		std::cout << "BODY SIZE FROM REQUEST: " << req.body.size() << "\n";
+		if (req.body.size() < content_length)
+		{
+			std::cout << "INCOMPLETE\n";
 			return rtype = INCOMPLETE, false;
+		}
 		if (!req.connection)
 			rtype = DONE;
-		req.body = req.body.substr(0, body_size);
+		req.body = req.body.substr(0, content_length);
 		bodyType = NONE;
-		current_pos += body_size;
+		current_pos += bodyStart + content_length;
 	}
 	else if (bodyType == CHUNKED && !handle_chunked(request.substr(bodyStart)))
 		return false;
+	current_pos += bodyStart;
 	return true;
 }
 
 std::string HttpRequest::parse_request(std::string request, serverConf *conf)
 {
-	request = request.substr(current_pos);
+	if (parseState == INHEADER)
+	{
+		std::cout << "CURRENT POS>>> " << current_pos << "\n";
+		request = request.substr(current_pos);
+		
+	}
 	static size_t HeaderEnd;
 	static size_t HeaderBegin;
 
@@ -245,7 +257,7 @@ std::string HttpRequest::parse_request(std::string request, serverConf *conf)
 	req.connection = true;
 	req.headers.clear();
 	
-	return route.getResponse(); // should rerurn the response from the route..
+	return route.getResponse();
 }
 
 HttpRequest::HttpRequest()

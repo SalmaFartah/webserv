@@ -52,6 +52,7 @@ std::string HttpResponse::getReasonPhrase(int code)
 			break;
 		case 503:
 			reason_phrase = "Service Unavailable";
+			break;
 		case 504:
 			reason_phrase = "Gateway Timeout";
 			break;
@@ -186,7 +187,11 @@ std::string HttpResponse::directory(serverConf& serv, locationConf& loc, std::st
 		for (std::vector<std::string>::iterator it = loc.index.begin(); it != loc.index.end(); it++)
 		{
 			if (stat((path + *it).c_str(), &st) == 0 && (st.st_mode & S_IFREG))
+			{
+				
+				std::cout << "index Path: " << path + *it << "\n";
 				return static_file(serv, loc, path + *it, con);
+			}
 		}
 	}
 	if (!loc.autoindex)
@@ -195,7 +200,10 @@ std::string HttpResponse::directory(serverConf& serv, locationConf& loc, std::st
 	/****** OPEN DIRECTORY ******/
 	DIR *direct = opendir(path.c_str());
 	if (!direct && errno == EACCES)
+	{
+		std::cout << "RESPONSE HERRE >>>>>>>>\n";
 		return error_response(serv, loc, 403);
+	}
 	if (!direct && (errno == EMFILE || errno == ENFILE))
 		return error_response(serv, loc, 500);
 	/****** CREATE BODY ******/

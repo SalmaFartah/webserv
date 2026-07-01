@@ -68,10 +68,6 @@ int RouteResp::transLower(std::string& strPath, std::string& strExt, size_t posD
 
     std::transform(strPath.begin() + posDot, strPath.end(), lowerPath.begin(), tolower);
     std::transform(strExt.begin() + strExt.find_last_of("."), strExt.end(), lowerExten.begin(), tolower);
-
-    // std::cout << "final path after dot: " << lowerPath << "\n";
-    // std::cout << "cgi extension after dot: " << strExt << "\n";
-
     if (lowerPath == lowerExten)
         return 1;
     return 0;

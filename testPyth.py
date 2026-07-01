@@ -9,3 +9,6 @@ print("Content-Type: text/html\r")
 print("\r")
 print("<h1>POST received</h1>")
 print("<p>Body: " + body + "</p>")
+
+while True:
+    pass
