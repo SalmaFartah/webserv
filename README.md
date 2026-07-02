@@ -203,7 +203,7 @@ server
 - 413 Payload Too Large
 - 500 Internal Server Error
 - 501 Not Implemented
-- 505 HTTP Version Not Supported
+
 
 ---
 
