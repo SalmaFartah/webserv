@@ -1,4 +1,4 @@
-# *This project has been created as part of the 42 curriculum by sfartah, ychadmi, kaneddam.*
+# *This project has been created as part of the 42 curriculum by sfartah, ychedmi, kaneddam.*
 
 # Webserv
 
@@ -86,8 +86,8 @@ Responsible for:
 
 The project requires:
 
-- Linux or macOS
-- A C++98 compatible compiler (`g++` or `clang++`)
+- macOS
+- A C++98 compatible compiler (`g++`)
 - GNU Make
 
 Optional dependencies:
@@ -129,7 +129,7 @@ make re
 Launch the server with a configuration file:
 
 ```bash
-./webserv config/default.conf
+./webserv nginx.conf
 ```
 
 or simply
@@ -155,28 +155,29 @@ curl http://localhost:8080
 # Example Configuration
 
 ```conf
-server
+server 
 {
     listen 8080;
-    root ./www;
-    index index.html;
+    # error_page 404 /Users/kaneddam/Desktop/webserv/main.cpp;
+    index WebServ_ressources.txt;
+    # client_max_body_size 11;
+
+    root /Users/kaneddam/Desktop;
 
     location /
     {
+        # allowed_method GET;
         autoindex on;
+        # cgi_pass /usr/local/bin/python3;
+        cgi_pass /bin/sh;
+        # cgi_extension .py;
+        cgi_extension .sh;
+        upload_store /Users/kaneddam/Desktop/uploadDire/;
+
     }
 
-    location /cgi
-    {
-        cgi_extension .py;
-        cgi_pass /usr/bin/python3;
-    }
-
-    location /upload
-    {
-        upload_store ./uploads;
-    }
 }
+
 ```
 
 ---
@@ -269,7 +270,7 @@ siege
 
 # AI Usage
 
-Artificial Intelligence (ChatGPT) was used exclusively as a learning and documentation assistant.
+Artificial Intelligence  was used exclusively as a learning and documentation assistant.
 
 It was used to:
 
@@ -285,7 +286,7 @@ All project architecture, implementation, algorithms and source code were design
 # Authors
 
 - **sfartah**
-- **ychadmi**
+- **ychedmi**
 - **kaneddam**
 
 42 School
