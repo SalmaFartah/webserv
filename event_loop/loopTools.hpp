@@ -1,4 +1,3 @@
-
 #pragma once
 #include <vector>
 #include <cstring>
@@ -18,7 +17,7 @@
 #include "../parse_config/inc/FillServer.hpp"
 #include "../parse_request/inc/HttpRequest.hpp"
 #include "../route/RouteResp.hpp"
-#define BUFFER_SZ 1000
+#define BUFFER_SZ 10
 
 struct myclients
 {

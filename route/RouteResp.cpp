@@ -112,12 +112,12 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResul
     
     if (conf->locations[winnerIdx].root[conf->locations[winnerIdx].root.size() - 1] == '/')
         finalPath.erase(conf->locations[winnerIdx].root.size(), 1);
-    std::cout << "FINAL PATH: " << finalPath << "\n";
+    // std::cout << "FINAL PATH: " << finalPath << "\n";
 
     /* CHECK UPLOAD */
     if (cont.method == "POST" && !conf->locations[winnerIdx].upload_store.empty())
     {
-        std::cout << "ITS UPLOAD CALL: " << conf->locations[winnerIdx].upload_store << "\n";
+        // std::cout << "ITS UPLOAD CALL: " << conf->locations[winnerIdx].upload_store << "\n";
         response = upload.handleUpload(cont, *conf, conf->locations[winnerIdx], cont.connection);
         if (upload.error)
             return -1;

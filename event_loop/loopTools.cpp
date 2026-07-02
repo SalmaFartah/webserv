@@ -99,7 +99,7 @@ void loopTools::newConnection(struct pollfd& server)
 	if (cli_sock < 0)
 		perror("accept: ");
 	if (cli_sock >= 0)
-		printf("[SERVER] New connection accepted on FD: %d\n", cli_sock);
+		// printf("[SERVER] New connection accepted on FD: %d\n", cli_sock);
 
 	fcntl(cli_sock, F_SETFL, O_NONBLOCK);
 
@@ -155,13 +155,9 @@ bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 	}
 	else if (reading > 0)
 	{
-		// buffer[reading] = '\0';
-		// infoClie[clieIdx].clieFile += buffer; // this one accumulate buffer
 		infoClie[clieIdx].clieFile.append(buffer, reading);
-        // std::cout << "server read from client " << client.fd << ": \n[" << buffer << "]" << std::endl;
-		std::cout << "size in READ FILE >> " << infoClie[clieIdx].clieFile.size() << "\n";
+		// std::cout << "size in READ FILE >> " << infoClie[clieIdx].clieFile.size() << "\n";
 		infoClie[clieIdx].resp  = infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf);
-		std::cout << "RTYPE: "<< infoClie[clieIdx].request.rtype << "\n";
 	}
     else if (reading == 0) // connection closed cleanly by the client (TCP FIN)
 	{
@@ -372,7 +368,7 @@ void loopTools::mainLoop()
 					vecFds[i].events = POLLIN;
 					infoClie[newidx].ofssetResp = 0;
 					infoClie[newidx].request.route.isCGI = false;
-					std::cout << "SERVER SENDING RESPONSE.. DONE\n";
+					// std::cout << "SERVER SENDING RESPONSE..\n";
 					if (infoClie[newidx].request.rtype != 0 && infoClie[newidx].request.rtype != 3)
 					{
 						std::cout << "client: " << vecFds[i].fd << " disconnected after response" << '\n';
@@ -388,9 +384,7 @@ void loopTools::mainLoop()
 					continue;
 				if (infoClie[newidx].request.rtype == 3) // keep alive
 				{
-					std::cout << "BEFORE REQUEST\n";
 					infoClie[newidx].resp  = infoClie[newidx].request.parse_request(infoClie[newidx].clieFile, infoClie[newidx].cliConf);
-					std::cout << "RTYPE: "<< infoClie[newidx].request.rtype << "\n";
 					isconnected = true;
 				}
 				else
@@ -414,7 +408,7 @@ void loopTools::mainLoop()
 				else if (isconnected && infoClie[newidx].request.rtype != 0)
 				{
 					vecFds[i].events = POLLIN | POLLOUT;
-					std::cout << "set to POLLOUT\n";
+					// std::cout << "set to POLLOUT\n";
 				}
 				
 			}

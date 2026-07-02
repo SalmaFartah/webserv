@@ -12,6 +12,16 @@ Content-Type: text/plain\r\n
 Content-Length: 180\r\n
 \r\n
 
+POST /upload HTTP/1.1\r\n
+Host: localhost\r\n
+Transfer-Encoding: chunked\r\n\r\n
+a\r\n
+Hello even\r\n
+6\r\n
+ World\r\n
+1\r\n
+!\r\n
+0\r\n\r\n
 
 POST /upload HTTP/1.1\r\n
 Host: localhost:8080\r\n

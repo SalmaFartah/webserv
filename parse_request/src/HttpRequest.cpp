@@ -104,6 +104,7 @@ bool HttpRequest::parse_headers()
 	size_t startLine = 0, eofLine, colon;
 	std::string line, key, value;
 
+	rtype = KEEP_ALIVE;
 	while (startLine < header.size())
 	{
 		eofLine = header.find("\r\n", startLine);
@@ -117,8 +118,6 @@ bool HttpRequest::parse_headers()
 			return false;
 		startLine = eofLine + 2;
 	}
-	std::cout << "CONTENT LENGTH: >>> " << req.headers["content-length"] << "\n";
-	// pause();
 	if (!req.headers.count("host") \
 	|| (req.headers.count("content-length") \
 	&& req.headers.count("transfer-encoding")))
@@ -162,6 +161,7 @@ bool HttpRequest::handle_chunked(std::string bodyreq)
 				pos2 = bodyreq.find("\r\n", pos1);
 				if (pos2 == std::string::npos)
 					return rtype = INCOMPLETE, false;
+
 				chunk = bodyreq.substr(pos1, pos2 - pos1);
 				if (chunk.size() != size)
 					return errorCode = 400, rtype = ERROR, false;
@@ -176,11 +176,15 @@ bool HttpRequest::handle_chunked(std::string bodyreq)
 					return rtype = INCOMPLETE, false;
 				if (str.size() >= 4 && str.find("\r\n\r\n"))
 					return errorCode = 400, rtype = ERROR, false;
+				rtype = KEEP_ALIVE;
 				if (!req.connection)
 					rtype = DONE;
+				pos0 = 0;
+				size = 0;
 				current_pos += pos1 + 4;
 				bodyState = INSIZE;
 				bodyType = NONE;
+				parseState = INHEADER;
 				return true;
 			}
 			pos0 = pos1;
@@ -189,36 +193,31 @@ bool HttpRequest::handle_chunked(std::string bodyreq)
 
 bool HttpRequest::parse_body(size_t bodyStart, std::string request)
 {
-	// current_pos += bodyStart;
+	if (rtype != INCOMPLETE)
+		current_pos += bodyStart;
 	if (bodyType == NORMAL)
 	{
 		req.body = request.substr(bodyStart);
-		std::cout << "BODY SIZE FROM REQUEST: " << req.body.size() << "\n";
 		if (req.body.size() < content_length)
-		{
-			std::cout << "INCOMPLETE\n";
 			return rtype = INCOMPLETE, false;
-		}
+		parseState = INHEADER;
+		rtype = KEEP_ALIVE;
 		if (!req.connection)
 			rtype = DONE;
 		req.body = req.body.substr(0, content_length);
 		bodyType = NONE;
-		current_pos += bodyStart + content_length;
+		current_pos += content_length;
+		return true;
 	}
 	else if (bodyType == CHUNKED && !handle_chunked(request.substr(bodyStart)))
 		return false;
-	current_pos += bodyStart;
 	return true;
 }
 
 std::string HttpRequest::parse_request(std::string request, serverConf *conf)
 {
 	if (parseState == INHEADER)
-	{
-		std::cout << "CURRENT POS>>> " << current_pos << "\n";
 		request = request.substr(current_pos);
-		
-	}
 	static size_t HeaderEnd;
 	static size_t HeaderBegin;
 
@@ -228,16 +227,12 @@ std::string HttpRequest::parse_request(std::string request, serverConf *conf)
 		if (HeaderEnd == std::string::npos)
 		{
 			rtype = INCOMPLETE;
-			std::cout << "INCOMPLETE\n";
 			return "";
 		}
 		HeaderBegin = request.find("\r\n");
 		requestLine = request.substr(0, HeaderBegin);
 		if (!parse_requestLine())
-		{
-			std::cout << "ERROR\n";
 			return resp.error_response(*conf, empty, errorCode);
-		}
 		HeaderBegin += 2;
 		header = request.substr(HeaderBegin, HeaderEnd - HeaderBegin + 2);
 		if (!header.size() || !parse_headers())
@@ -246,8 +241,8 @@ std::string HttpRequest::parse_request(std::string request, serverConf *conf)
 			return resp.error_response(*conf, empty, 400);
 		}
 		parseState = INBODY;
+		rtype = KEEP_ALIVE;
 	}
-	rtype = KEEP_ALIVE;
 	if (!parse_body(HeaderEnd + 4, request))
 		return resp.error_response(*conf, empty, errorCode);
 	if (route.routeCheck(conf, req, 0, CGIobj) == -1)
@@ -256,7 +251,7 @@ std::string HttpRequest::parse_request(std::string request, serverConf *conf)
 	parseState = INHEADER;
 	req.connection = true;
 	req.headers.clear();
-	
+
 	return route.getResponse();
 }
 

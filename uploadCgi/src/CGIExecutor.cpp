@@ -39,42 +39,43 @@ void CGIExecutor::freeEnvArray(char** envArray, size_t count)
     delete[] envArray;
 }
 
-std::string CGIExecutor::readWithTimeout(int fd, int childid, size_t timeout)
-{
-    std::string result;
-    char buffer[4096];
-    fd_set readFds;
-    struct timeval tv;
+// std::string CGIExecutor::readWithTimeout(int fd, int childid, size_t timeout)
+// {
+//     std::string result;
+//     char buffer[4096];
+//     fd_set readFds;
+//     struct timeval tv;
     
-    while (true) 
-    {
-        FD_ZERO(&readFds);
-        FD_SET(fd, &readFds);
+//     while (true) 
+//     {
+//         FD_ZERO(&readFds);
+//         FD_SET(fd, &readFds);
         
-        tv.tv_sec = timeout;
-        tv.tv_usec = 0;
+//         tv.tv_sec = timeout;
+//         tv.tv_usec = 0;
         
         
-        int selectResult = select(fd + 1, &readFds, NULL, NULL, &tv);
+//         int selectResult = select(fd + 1, &readFds, NULL, NULL, &tv);
         
-        if (selectResult <= 0)  // timeout expired
-        {
-            kill(childid, SIGKILL);   // kill the hanging script
-            return "";
-        }
-        if (FD_ISSET(fd, &readFds)) 
-        {
-            ssize_t bytesRead = read(fd, buffer, sizeof(buffer) - 1);
-            if (bytesRead <= 0)
-                break;
-            result.append(buffer, bytesRead);
-        }
-    }
+//         if (selectResult <= 0)  // timeout expired
+//         {
+//             kill(childid, SIGKILL);   // kill the hanging script
+//             return "";
+//         }
+//         if (FD_ISSET(fd, &readFds)) 
+//         {
+//             ssize_t bytesRead = read(fd, buffer, sizeof(buffer) - 1);
+//             if (bytesRead <= 0)
+//                 break;
+//             result.append(buffer, bytesRead);
+//         }
+//     }
     
-    return result;
-}
+//     return result;
+// }
 
-void CGIExecutor::executeCGI(const std::string& scriptPath, const std::string& cgi_pass, const std::map<std::string, std::string>& envVars, const std::string& requestBody, CGIResult& CgiRes)
+void CGIExecutor::executeCGI(const std::string& scriptPath, const std::string& cgi_pass, \
+const std::map<std::string, std::string>& envVars, const std::string& requestBody, CGIResult& CgiRes)
 {
     int stdinPipe[2];
     int stdoutPipe[2];
