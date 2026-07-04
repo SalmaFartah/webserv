@@ -200,10 +200,7 @@ std::string HttpResponse::directory(serverConf& serv, locationConf& loc, std::st
 	/****** OPEN DIRECTORY ******/
 	DIR *direct = opendir(path.c_str());
 	if (!direct && errno == EACCES)
-	{
-		std::cout << "RESPONSE HERRE >>>>>>>>\n";
 		return error_response(serv, loc, 403);
-	}
 	if (!direct && (errno == EMFILE || errno == ENFILE))
 		return error_response(serv, loc, 500);
 	/****** CREATE BODY ******/
@@ -214,7 +211,7 @@ std::string HttpResponse::directory(serverConf& serv, locationConf& loc, std::st
 	while ((read = readdir(direct)))
 	{
 		if (std::string(read->d_name) != "." && std::string(read->d_name) != "..")
-			body << "<a href=\"" << read->d_name << "\">" << read->d_name << "</a>";
+			body << "<a href=\"" << read->d_name << "\">" << read->d_name << "</a><br>";
 	}
 
 	/****** CLOSE DIRECTORY && BUILD RESPONSE ******/

@@ -99,7 +99,7 @@ void loopTools::newConnection(struct pollfd& server)
 	if (cli_sock < 0)
 		perror("accept: ");
 	if (cli_sock >= 0)
-		// printf("[SERVER] New connection accepted on FD: %d\n", cli_sock);
+		printf("[SERVER] New connection accepted on FD: %d\n", cli_sock);
 
 	fcntl(cli_sock, F_SETFL, O_NONBLOCK);
 
@@ -156,6 +156,7 @@ bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 	else if (reading > 0)
 	{
 		infoClie[clieIdx].clieFile.append(buffer, reading);
+		// std::cout << "READ FILE >> " << infoClie[clieIdx].clieFile << "\n";
 		// std::cout << "size in READ FILE >> " << infoClie[clieIdx].clieFile.size() << "\n";
 		infoClie[clieIdx].resp  = infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf);
 	}
@@ -331,8 +332,8 @@ void loopTools::mainLoop()
 		for (size_t i = 0; i < vecFds.size(); i++)
 		{
 			int newidx = findClient(vecFds[i].fd);
-			if (newidx != -1  && !(vecFds[i].revents) \
-			&& (difftime(std::time(NULL), infoClie[newidx].clieTime) > 30.0))
+			if (i >= serv_nb
+			&& !(vecFds[i].revents) && newidx != -1 && (difftime(std::time(NULL), infoClie[newidx].clieTime) > 10.0))
 			{
 				realResp.routeCheck(infoClie[newidx].cliConf, infoClie[newidx].request.req, 408, infoClie[newidx].request.CGIobj);
 				infoClie[newidx].resp = realResp.getResponse();
@@ -341,14 +342,14 @@ void loopTools::mainLoop()
 			}
 			else if (i < serv_nb  && vecFds[i].revents & POLLIN) // new connection arrived
 				newConnection(vecFds[i]);
-			else if (cgiMap.count(vecFds[i].fd) && vecFds[i].revents & POLLOUT)
+			else if (i >= serv_nb && cgiMap.count(vecFds[i].fd) && vecFds[i].revents & POLLOUT)
 			{
 				CGIResult data = cgiMap[vecFds[i].fd];
 				CgiWrite(data, i);
 			}
-			else if (cgiMap.count(vecFds[i].fd) && vecFds[i].revents & POLLIN)
+			else if (i >= serv_nb && cgiMap.count(vecFds[i].fd) && vecFds[i].revents & POLLIN)
 			{
-				CGIResult data = cgiMap[vecFds[i].fd];
+				CGIResult& data = cgiMap[vecFds[i].fd];
 				CgiRead(data, i);
 			}
 			else if (newidx != -1 && vecFds[i].revents & POLLOUT)
@@ -358,6 +359,7 @@ void loopTools::mainLoop()
 				{
 					perror("write ");
 					closeClient(vecFds[i].fd, newidx, &i);
+					continue ;
 				}
 				else if (n > 0)
 					infoClie[newidx].ofssetResp += n;
@@ -392,7 +394,6 @@ void loopTools::mainLoop()
 				/* if cgi is true, create struct pollfd and add those pipes to the vecFds */
 				if (isconnected && infoClie[newidx].request.rtype != 0 && infoClie[newidx].request.route.isCGI)
 				{
-
 					infoClie[newidx].request.CGIobj.start_time = std::time(NULL);
 					infoClie[newidx].request.CGIobj.clie_fd = vecFds[i].fd;
 					addNewFd(infoClie[newidx].request.CGIobj.stdinPipe, POLLOUT);
@@ -410,7 +411,6 @@ void loopTools::mainLoop()
 					vecFds[i].events = POLLIN | POLLOUT;
 					// std::cout << "set to POLLOUT\n";
 				}
-				
 			}
 		}
 	}

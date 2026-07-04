@@ -58,6 +58,17 @@ bool HttpRequest::invalid_value(std::string value)
 	return false;
 }
 
+void HttpRequest::trim_WS(std::string& str)
+{
+	size_t start, end;
+	start = str.find_first_not_of(" \t");
+	end = str.find_last_not_of(" \t");
+	if (start == std::string::npos)
+		str = "";
+	if (!str.empty())
+		str = str.substr(start, end - start + 1);
+}
+
 bool HttpRequest::get_key(std::string &storeKey, const std::string &line, size_t keyEND)
 {
 	storeKey = line.substr(0, keyEND);
@@ -73,21 +84,24 @@ bool HttpRequest::get_key(std::string &storeKey, const std::string &line, size_t
 
 bool HttpRequest::get_value(std::string &storeVal, const std::string &line, size_t valueStart)
 {
-	size_t start, end;
 	storeVal = line.substr(valueStart, line.size());
+	std::transform(storeVal.begin(), storeVal.end(), storeVal.begin(), ::tolower);
 	if ((!isprintSTR(storeVal) && storeVal.find("\t") == std::string::npos))
 		return false;
-	start = storeVal.find_first_not_of(" \t");
-	end = storeVal.find_last_not_of(" \t");
-	if (start == std::string::npos)
-		storeVal = "";
-	if (!storeVal.empty())
-		storeVal = storeVal.substr(start, end - start + 1);
+	trim_WS(storeVal);
 	return true;
 }
 
 bool HttpRequest::store_header(const std::string& key, const std::string& value, headerMap& headers)
 {
+	if (key == "content-type" && value.find("multipart/form-data") == 0)
+	{
+		bool x = false;
+		std::string parameter = value.substr(std::string("multipart/form-data").size());
+		if (!get_param(parameter, boundary, "boundary", x) \
+		|| boundary.find_first_of(" \t") != std::string::npos)
+			return boundary.clear(), false;
+	}
 	if ((key == "host" && (headers.count("host") || value.empty()))
 	|| (key == "content-length" && (headers.count("content-length") || invalid_value(value)))
 	|| (key == "transfer-encoding" && (value != "chunked" || headers.count("transfer-encoding")))
@@ -96,6 +110,40 @@ bool HttpRequest::store_header(const std::string& key, const std::string& value,
 	if (key == "connection" && value == "close")
 		req.connection = false;
 	headers[key] = value;
+	return true;
+}
+
+bool HttpRequest::get_param(std::string& param, std::string& Val, std::string key, bool& keyFound)
+{
+	std::string holder, matchKey;
+	trim_WS(param);
+	if (param[0] != ';')
+		return false;
+	size_t paramEnd = param.find(";", 1);
+	if (paramEnd == std::string::npos)
+	{
+		holder = param.substr(1); // ex: (  ; name="avatar") -> (name="avatar")
+		param = "";
+	}
+	else
+	{
+		holder = param.substr(1, paramEnd - 1);// ex: (  ; name="avatar"; filename="somth") -> ( name="avatar")
+		param = param.substr(paramEnd); // -> ; filename="somth")
+	}
+	trim_WS(holder); //  ex: (  name="avatar"   ) -> (name="avatar")
+	size_t keyEnd = holder.find("=");
+	if (keyEnd == std::string::npos\
+	|| (matchKey = holder.substr(0, keyEnd)) != key )
+	{
+		keyFound = false;
+		return false;
+	}
+	Val = holder.substr(keyEnd + 1);
+	if (Val[0] == '"' && Val[Val.size() - 1] != '"')
+		return false;
+	
+	if (Val[0] == '"')
+		Val = Val.substr(1, Val.size() - 1);
 	return true;
 }
 
@@ -191,6 +239,89 @@ bool HttpRequest::handle_chunked(std::string bodyreq)
 		}
 }
 
+bool HttpRequest::part_headers(std::string headPart)
+{
+	if (headPart.empty())
+		return false;
+	size_t startLine = 0, eofLine, colon;
+	std::string line, key, value;
+	while (startLine < headPart.size())
+	{
+		eofLine = headPart.find("\r\n", startLine);
+		line = headPart.substr(startLine, eofLine - startLine);
+		
+		colon = line.find(":");
+		if (colon == std::string::npos || !colon)
+			return false;
+		if (!get_key(key, line, colon) \
+		|| !get_value(value, line, colon + 1))
+			return false;
+		if (key == "content-disposition")
+		{
+			std::string name, filename;
+			bool keyFound = true;
+			if (value.find("form-data"))
+				return false;
+			// if the name param is missing or has a wrong syntax
+			//  like (name photo) or (name="photo) or (name="")
+			std::string param = value.substr(std::string("form-data").size());
+			if (!get_param(param, name, "name", keyFound))
+				return false;
+			 // if the filename param has a wrong syntax
+			//  like (filename file.txt) or (filename="file.txt) or (filename="")
+			if (!get_param(param, filename, "filename", keyFound) && keyFound)
+				return false;
+			
+		}
+		startLine = eofLine + 2;
+	}
+	return true;
+}
+
+bool HttpRequest::handle_multipart()
+{
+	std::string part;
+	std::string firstDelim = "--" + boundary + "\r\n";
+	std::string lastDelim = "\r\n--" + boundary + "--" + "\r\n";
+	std::string delim = "\r\n" + firstDelim;
+	size_t partStart, headerEnd, partEnd;
+
+	if (req.body.find(firstDelim) != 0)
+		return rtype = ERROR, false;
+
+	partStart = firstDelim.size();
+	std::cout << "size: " << partStart << " char: " << req.body.size() << "\n";
+	while (partStart < req.body.size())
+	{
+		partEnd = req.body.find(delim, partStart);
+		if (partEnd == std::string::npos)
+		{
+			delim = lastDelim;
+			partEnd = req.body.find(lastDelim, partStart);
+			if (partEnd == std::string::npos \
+			|| (partEnd + lastDelim.size()) < req.body.size())
+				return rtype = ERROR, false;
+		}
+
+		part = req.body.substr(partStart, partEnd - partStart);
+		headerEnd = part.find("\r\n\r\n", partStart);
+		if (headerEnd == std::string::npos)
+			return rtype = ERROR, false;
+
+		if (!part_headers(part.substr(0, headerEnd + 2)))
+			return rtype = ERROR, false;
+		
+		headerEnd += 4;
+
+		std::string RawBytes = part.substr(headerEnd);
+		if (RawBytes.empty())
+			return rtype = ERROR, false;
+		req.uploads[filename] = RawBytes;
+		partStart = partEnd + delim.size();
+	}
+	return true;
+}
+
 bool HttpRequest::parse_body(size_t bodyStart, std::string request)
 {
 	if (rtype != INCOMPLETE)
@@ -207,10 +338,12 @@ bool HttpRequest::parse_body(size_t bodyStart, std::string request)
 		req.body = req.body.substr(0, content_length);
 		bodyType = NONE;
 		current_pos += content_length;
-		return true;
 	}
-	else if (bodyType == CHUNKED && !handle_chunked(request.substr(bodyStart)))
+	else if ((bodyType == CHUNKED && !handle_chunked(request.substr(bodyStart))))
 		return false;
+	if (!boundary.empty() && !handle_multipart())
+		return errorCode = 400, false;
+	
 	return true;
 }
 

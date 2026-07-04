@@ -47,6 +47,7 @@ typedef struct
 	std::map<std::string, std::string> headers;
 	std::string body;
     bool connection;
+    std::map<std::string, std::string> uploads;
 } ReqContent;
 
 typedef struct locationConf

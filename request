@@ -40,7 +40,7 @@ ContentContentContentContent
 POST /upload HTTP/1.1\r\n
 Host: localhost:8080\r\n
 Connection: close\r\n
-Content-Type: text/plain\r\n
+Content-Type: mutipart/form-data boundary="XwZdffh123"\r\n
 Content-Length: 28\r\n
 \r\n
 ContentContentContentContent

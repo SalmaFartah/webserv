@@ -16,28 +16,33 @@ class HttpRequest
 {
 		typedef std::map<std::string, std::string> headerMap;
 
-		std::string requestLine;
-		std::string header;
-		
 		enum {CHUNKED, NORMAL, NONE} bodyType;
 		enum {INHEADER, INBODY} parseState;
 		enum {INSIZE, IN_CHUNK, THE_END} bodyState;
-		size_t content_length;
-		size_t current_pos;
 
+		std::string requestLine, header, boundary, filename;
+		size_t content_length, current_pos;
 		HttpResponse resp;
 		locationConf empty;
+
 		bool isprintSTR(std::string);
+		void trim_WS(std::string& str);
+
 		bool parse_requestLine();
+		void extract_query();
+
 		bool parse_headers();
 		bool get_key(std::string&, const std::string&, size_t);
 		bool get_value(std::string&, const std::string&, size_t);
-		void extract_query();
-		bool invalid_value(std::string);
-		bool get_size(size_t&, std::string, size_t, size_t);
-		bool parse_body(size_t, std::string);
-		bool handle_chunked(std::string);
 		bool store_header(const std::string&, const std::string&, headerMap&);
+		bool invalid_value(std::string);
+
+		bool parse_body(size_t, std::string);
+		bool get_size(size_t&, std::string, size_t, size_t);
+		bool handle_chunked(std::string);
+		bool part_headers(std::string);
+		bool handle_multipart();
+		bool get_param(std::string&, std::string&, std::string, bool&);
 	public:
 		CGIResult CGIobj;
 		HttpRequest();
