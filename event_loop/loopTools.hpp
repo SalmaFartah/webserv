@@ -17,7 +17,7 @@
 #include "../parse_config/inc/FillServer.hpp"
 #include "../parse_request/inc/HttpRequest.hpp"
 #include "../route/RouteResp.hpp"
-#define BUFFER_SZ 10
+#define BUFFER_SZ 1000
 
 struct myclients
 {

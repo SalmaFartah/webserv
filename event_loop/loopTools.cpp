@@ -99,7 +99,7 @@ void loopTools::newConnection(struct pollfd& server)
 	if (cli_sock < 0)
 		perror("accept: ");
 	if (cli_sock >= 0)
-		// printf("[SERVER] New connection accepted on FD: %d\n", cli_sock);
+		printf("[SERVER] New connection accepted on FD: %d\n", cli_sock);
 
 	fcntl(cli_sock, F_SETFL, O_NONBLOCK);
 
@@ -155,8 +155,9 @@ bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 	}
 	else if (reading > 0)
 	{
+
 		infoClie[clieIdx].clieFile.append(buffer, reading);
-		// std::cout << "size in READ FILE >> " << infoClie[clieIdx].clieFile.size() << "\n";
+		std::cout << "----------REQUEST FROM [" << client.fd << "]---------\n" << infoClie[clieIdx].clieFile << "\n---------------------\n";
 		infoClie[clieIdx].resp  = infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf);
 	}
     else if (reading == 0) // connection closed cleanly by the client (TCP FIN)
@@ -225,13 +226,16 @@ bool loopTools::CgiRead(CGIResult& cgiRd, size_t &i)
 		return false;
 	}
 	else if (reading > 0)
+	{
 		cgiRd.output.append(buffer, reading);
+		
+	}
 	else // read == 0
 	{
 		HttpRequest &requestCli = infoClie[xfd].request;
 		int childStatus;
 		waitpid(cgiRd.pidChild, &childStatus, 0);
-		if (WIFEXITED(childStatus) && WEXITSTATUS(childStatus) == 0) 
+		if (WIFEXITED(childStatus) && WEXITSTATUS(childStatus) == 0)
 			infoClie[xfd].resp = requestCli.route.Cgi.buildCGIResponse(cgiRd, requestCli.req.connection);
     	else
 		{
@@ -331,8 +335,8 @@ void loopTools::mainLoop()
 		for (size_t i = 0; i < vecFds.size(); i++)
 		{
 			int newidx = findClient(vecFds[i].fd);
-			if (newidx != -1  && !(vecFds[i].revents) \
-			&& (difftime(std::time(NULL), infoClie[newidx].clieTime) > 30.0))
+			if (i >= serv_nb && !cgiMap.count(vecFds[i].fd) \
+			&& !(vecFds[i].revents) && newidx != -1 && (difftime(std::time(NULL), infoClie[newidx].clieTime) > 15.0))
 			{
 				realResp.routeCheck(infoClie[newidx].cliConf, infoClie[newidx].request.req, 408, infoClie[newidx].request.CGIobj);
 				infoClie[newidx].resp = realResp.getResponse();
@@ -341,23 +345,24 @@ void loopTools::mainLoop()
 			}
 			else if (i < serv_nb  && vecFds[i].revents & POLLIN) // new connection arrived
 				newConnection(vecFds[i]);
-			else if (cgiMap.count(vecFds[i].fd) && vecFds[i].revents & POLLOUT)
+			else if (i >= serv_nb && cgiMap.count(vecFds[i].fd) && vecFds[i].revents & POLLOUT)
 			{
 				CGIResult data = cgiMap[vecFds[i].fd];
 				CgiWrite(data, i);
 			}
-			else if (cgiMap.count(vecFds[i].fd) && vecFds[i].revents & POLLIN)
+			else if (i >= serv_nb && cgiMap.count(vecFds[i].fd) && vecFds[i].revents & POLLIN)
 			{
-				CGIResult data = cgiMap[vecFds[i].fd];
+				CGIResult& data = cgiMap[vecFds[i].fd];
 				CgiRead(data, i);
 			}
-			else if (newidx != -1 && vecFds[i].revents & POLLOUT)
+			else if (newidx != -1 && !cgiMap.count(vecFds[i].fd) && vecFds[i].revents & POLLOUT)
 			{
 				ssize_t n = write(vecFds[i].fd, infoClie[newidx].resp.data() + infoClie[newidx].ofssetResp, infoClie[newidx].resp.size() - infoClie[newidx].ofssetResp);
 				if (n < 0)
 				{
 					perror("write ");
 					closeClient(vecFds[i].fd, newidx, &i);
+					continue;
 				}
 				else if (n > 0)
 					infoClie[newidx].ofssetResp += n;
@@ -376,7 +381,7 @@ void loopTools::mainLoop()
 					}
 				}
 			}
-			else if (newidx != -1 && (vecFds[i].revents & POLLIN || infoClie[newidx].request.rtype == 3)) // a client want to do smth
+			else if (newidx != -1 && i >= serv_nb && !cgiMap.count(vecFds[i].fd) && (vecFds[i].revents & POLLIN || infoClie[newidx].request.rtype == 3)) // a client want to do smth
 			{
 				// handle this data on existing client
 				infoClie[newidx].clieTime = std::time(NULL);

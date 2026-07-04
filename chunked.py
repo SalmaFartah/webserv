@@ -29,3 +29,5 @@ s.sendall(request.encode())
 response = s.recv(65536)
 print(response.decode())
 s.close()
+while True:
+    pass
