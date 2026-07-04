@@ -85,7 +85,7 @@ bool HttpRequest::get_key(std::string &storeKey, const std::string &line, size_t
 bool HttpRequest::get_value(std::string &storeVal, const std::string &line, size_t valueStart)
 {
 	storeVal = line.substr(valueStart, line.size());
-	std::transform(storeVal.begin(), storeVal.end(), storeVal.begin(), ::tolower);
+	// std::transform(storeVal.begin(), storeVal.end(), storeVal.begin(), ::tolower);
 	if ((!isprintSTR(storeVal) && storeVal.find("\t") == std::string::npos))
 		return false;
 	trim_WS(storeVal);
@@ -94,6 +94,9 @@ bool HttpRequest::get_value(std::string &storeVal, const std::string &line, size
 
 bool HttpRequest::store_header(const std::string& key, const std::string& value, headerMap& headers)
 {
+	std::string tmp(value.size(), '\0');
+	std::transform(value.begin(), value.end(), tmp.begin(), ::tolower);
+	std::cout << "TMP: " << tmp << "\n";
 	if (key == "content-type" && value.find("multipart/form-data") == 0)
 	{
 		bool x = false;
@@ -130,6 +133,7 @@ bool HttpRequest::get_param(std::string& param, std::string& Val, std::string ke
 		holder = param.substr(1, paramEnd - 1);// ex: (  ; name="avatar"; filename="somth") -> ( name="avatar")
 		param = param.substr(paramEnd); // -> ; filename="somth")
 	}
+	
 	trim_WS(holder); //  ex: (  name="avatar"   ) -> (name="avatar")
 	size_t keyEnd = holder.find("=");
 	if (keyEnd == std::string::npos\
@@ -143,7 +147,7 @@ bool HttpRequest::get_param(std::string& param, std::string& Val, std::string ke
 		return false;
 	
 	if (Val[0] == '"')
-		Val = Val.substr(1, Val.size() - 1);
+		Val = Val.substr(1, Val.size() - 2);
 	return true;
 }
 
@@ -241,6 +245,7 @@ bool HttpRequest::handle_chunked(std::string bodyreq)
 
 bool HttpRequest::part_headers(std::string headPart)
 {
+	// std::cout << "headers: -------\n" << headPart << "\n";
 	if (headPart.empty())
 		return false;
 	size_t startLine = 0, eofLine, colon;
@@ -258,7 +263,7 @@ bool HttpRequest::part_headers(std::string headPart)
 			return false;
 		if (key == "content-disposition")
 		{
-			std::string name, filename;
+			std::string name;
 			bool keyFound = true;
 			if (value.find("form-data"))
 				return false;
@@ -286,11 +291,14 @@ bool HttpRequest::handle_multipart()
 	std::string delim = "\r\n" + firstDelim;
 	size_t partStart, headerEnd, partEnd;
 
+	// std::cout << "boundary: " << boundary << "\n";
+	// std::cout << "body " << req.body << "\n";
+
 	if (req.body.find(firstDelim) != 0)
 		return rtype = ERROR, false;
+	std::cout << "HANDLE MULTIPART\n";	
 
 	partStart = firstDelim.size();
-	std::cout << "size: " << partStart << " char: " << req.body.size() << "\n";
 	while (partStart < req.body.size())
 	{
 		partEnd = req.body.find(delim, partStart);
@@ -304,9 +312,14 @@ bool HttpRequest::handle_multipart()
 		}
 
 		part = req.body.substr(partStart, partEnd - partStart);
-		headerEnd = part.find("\r\n\r\n", partStart);
+		headerEnd = part.find("\r\n\r\n");
+		// std::cout << "CharPartSTART: " << part[partStart] << "\n";
+		std::cout << "posStart: " << partStart << "\n";
 		if (headerEnd == std::string::npos)
+		{
+			std::cout << "ERROR HERE\n";
 			return rtype = ERROR, false;
+		}
 
 		if (!part_headers(part.substr(0, headerEnd + 2)))
 			return rtype = ERROR, false;
@@ -329,6 +342,7 @@ bool HttpRequest::parse_body(size_t bodyStart, std::string request)
 	if (bodyType == NORMAL)
 	{
 		req.body = request.substr(bodyStart);
+	std::cout << "IN PARAM > " << req.body.size() << "\n";
 		if (req.body.size() < content_length)
 			return rtype = INCOMPLETE, false;
 		parseState = INHEADER;

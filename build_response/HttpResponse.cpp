@@ -131,7 +131,7 @@ std::string HttpResponse::error_response(serverConf& server, locationConf& locat
 		fileName = server.error_page[errorCode];
 	if (!fileName.empty())
 	{
-		std::cout << "is empty\n";
+		// std::cout << "is empty\n";
 		std::string ext("default");
 		size_t pos = fileName.find(".");
 		if (pos && pos != std::string::npos)
@@ -189,7 +189,7 @@ std::string HttpResponse::directory(serverConf& serv, locationConf& loc, std::st
 			if (stat((path + *it).c_str(), &st) == 0 && (st.st_mode & S_IFREG))
 			{
 				
-				std::cout << "index Path: " << path + *it << "\n";
+				// std::cout << "index Path: " << path + *it << "\n";
 				return static_file(serv, loc, path + *it, con);
 			}
 		}
@@ -200,10 +200,6 @@ std::string HttpResponse::directory(serverConf& serv, locationConf& loc, std::st
 	/****** OPEN DIRECTORY ******/
 	DIR *direct = opendir(path.c_str());
 	if (!direct && errno == EACCES)
-<<<<<<< HEAD
-=======
-	{
->>>>>>> 4a93c9a6c370af091864a7663e09b4d5aded0b2d
 		return error_response(serv, loc, 403);
 	if (!direct && (errno == EMFILE || errno == ENFILE))
 		return error_response(serv, loc, 500);

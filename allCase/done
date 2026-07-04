@@ -1,15 +1,21 @@
-URI: /images/ HTTP/1.1\r\n
-
-
-URI: /images/png/x/ HTTP/1.1\r\n
-
-
-URI: /images/jpg/photo.jpg HTTP/1.1\r\n
-
 POST /upload HTTP/1.1\r\n
-Host: localhost:8080\r\n
-Content-Type: text/plain\r\n
-Connection: keep-alive\r\n
-Content-Length: 28\r\n
+Host: localhost:3000\r\n
+Content-Type: multipart/form-data; boundary=----MyBoundary123456\r\n
+Content-Length: <calculated>\r\n
 \r\n
-ContentConte
+------MyBoundary123456\r\n
+Content-Disposition: form-data; name="files[]"; filename="photo1.jpg"\r\n
+Content-Type: image/jpeg\r\n
+\r\n
+<binary contents of photo1.jpg>\r\n
+------MyBoundary123456\r\n
+Content-Disposition: form-data; name="files[]"; filename="photo2.jpg"\r\n
+Content-Type: image/jpeg\r\n
+\r\n
+<binary contents of photo2.jpg>\r\n
+------MyBoundary123456\r\n
+Content-Disposition: form-data; name="files[]"; filename="document.pdf"\r\n
+Content-Type: application/pdf\r\n
+\r\n
+<binary contents of document.pdf>\r\n
+------MyBoundary123456--\r\n

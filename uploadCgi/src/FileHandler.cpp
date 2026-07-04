@@ -27,7 +27,6 @@ std::string FileHandler::generateFilename()
 
 std::string FileHandler::handleUpload(ReqContent& request, serverConf& server, locationConf& loc, bool keepAlive)
 {
-    std::map<std::string, std::string> uploadMap;
     std::map<std::string, std::string>::iterator it;
     error = false;
     HttpResponse responseBuilder;
@@ -47,33 +46,33 @@ std::string FileHandler::handleUpload(ReqContent& request, serverConf& server, l
     // folder is created or exist
 
     std::string direPath = loc.upload_store;
-    std::ofstream outFile;
+    std::ofstream notMulti;
 
     if (direPath[direPath.size() - 1] != '/')
         direPath += '/';
 
-    for (it = uploadMap.begin(); it != uploadMap.end(); it++)
+    for (it = request.uploads.begin(); it != request.uploads.end(); it++)
     {
-        direPath += it->first.c_str();
-        outFile.open(direPath, std::ios::binary | std::ios::trunc);
-        if (!outFile.is_open())
+        std::ofstream multiFile;
+        multiFile.open(direPath + it->first.c_str(), std::ios::binary | std::ios::trunc);
+        if (!multiFile.is_open())
         {
             error = true;
             return responseBuilder.error_response(server, loc, 500);
         }
-        outFile << it->second;
-        std::cout << "File uploaded successfully to: " << direPath << std::endl;
+        multiFile << it->second;
+        std::cout << "File uploaded successfully to: " << direPath + it->first.c_str() << std::endl;
     }
-    if (!uploadMap.size())
+    if (!request.uploads.size())
     {
         direPath += generateFilename();
-        outFile.open(direPath, std::ios::binary | std::ios::trunc);
-        if (!outFile.is_open())
+        notMulti.open(direPath, std::ios::binary | std::ios::trunc);
+        if (!notMulti.is_open())
         {
             error = true;
             return responseBuilder.error_response(server, loc, 500);
         }
-        outFile << request.body;
+        notMulti << request.body;
         std::cout << "File uploaded successfully to: " << direPath << std::endl;
     }
 
