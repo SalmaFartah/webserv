@@ -112,12 +112,12 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResul
     
     if (conf->locations[winnerIdx].root[conf->locations[winnerIdx].root.size() - 1] == '/')
         finalPath.erase(conf->locations[winnerIdx].root.size(), 1);
-    // std::cout << "FINAL PATH: " << finalPath << "\n";
+    std::cout << "FINAL PATH: " << finalPath << "\n";
 
     /* CHECK UPLOAD */
     if (cont.method == "POST" && !conf->locations[winnerIdx].upload_store.empty())
     {
-        // std::cout << "ITS UPLOAD CALL: " << conf->locations[winnerIdx].upload_store << "\n";
+        std::cout << "ITS UPLOAD CALL: " << conf->locations[winnerIdx].upload_store << "\n";
         response = upload.handleUpload(cont, *conf, conf->locations[winnerIdx], cont.connection);
         if (upload.error)
             return -1;
@@ -129,7 +129,6 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResul
 
     if (checkDire(finalPath, conf, conf->locations[winnerIdx], &st) == -1)
         return -1;
-
     if (cont.method == "DELETE")
     {
         std::cout << "ITS A DELETE CALL " << "\n";
@@ -141,6 +140,12 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResul
     if (cont.method == "GET" && S_ISDIR(st.st_mode)) // if a dire
     {
         std::cout << "ITS A DIRECTORY WITH GET: " << conf->locations[winnerIdx].root << "\n";
+        if (finalPath[finalPath.size() - 1] != '/')
+        {
+            std::cout << "<<<<<<<<<<<<<<<<<<<<<<<RETURN DIRECTIVE call response 301 Found: >>>>>>>" << finalPath << "\n";
+            response = respObj.redirect(301, cont.request_target + "/", cont.connection);
+            return 0;
+        }
         response = respObj.directory(*conf, conf->locations[winnerIdx], finalPath, cont.connection);
         if (respObj.error)
             return -1;

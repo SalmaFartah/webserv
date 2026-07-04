@@ -27,6 +27,8 @@ std::string FileHandler::generateFilename()
 
 std::string FileHandler::handleUpload(ReqContent& request, serverConf& server, locationConf& loc, bool keepAlive)
 {
+    std::map<std::string, std::string> uploadMap;
+    std::map<std::string, std::string>::iterator it;
     error = false;
     HttpResponse responseBuilder;
     
@@ -44,22 +46,36 @@ std::string FileHandler::handleUpload(ReqContent& request, serverConf& server, l
     }
     // folder is created or exist
 
-    std::string filepath = loc.upload_store;
-    if (filepath[filepath.size() - 1] != '/')
-        filepath += '/';
-    filepath += generateFilename();
-    // file is created
+    std::string direPath = loc.upload_store;
+    std::ofstream outFile;
 
-    std::ofstream outFile(filepath.c_str(), std::ios::binary);
-    /* check it later*/
-    if (!outFile.is_open())
+    if (direPath[direPath.size() - 1] != '/')
+        direPath += '/';
+
+    for (it = uploadMap.begin(); it != uploadMap.end(); it++)
     {
-        error = true;
-        return responseBuilder.error_response(server, loc, 500);
+        direPath += it->first.c_str();
+        outFile.open(direPath, std::ios::binary | std::ios::trunc);
+        if (!outFile.is_open())
+        {
+            error = true;
+            return responseBuilder.error_response(server, loc, 500);
+        }
+        outFile << it->second;
+        std::cout << "File uploaded successfully to: " << direPath << std::endl;
     }
-    /**/
-    outFile << request.body;
-    
-    std::cout << "File uploaded successfully to: " << filepath << std::endl;
+    if (!uploadMap.size())
+    {
+        direPath += generateFilename();
+        outFile.open(direPath, std::ios::binary | std::ios::trunc);
+        if (!outFile.is_open())
+        {
+            error = true;
+            return responseBuilder.error_response(server, loc, 500);
+        }
+        outFile << request.body;
+        std::cout << "File uploaded successfully to: " << direPath << std::endl;
+    }
+
     return responseBuilder.build(201, "<html><body><h1>201 Created</h1><p>File uploaded successfully</p></body></html>", "text/html", keepAlive);
 }

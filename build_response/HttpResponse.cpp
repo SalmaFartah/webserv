@@ -200,6 +200,10 @@ std::string HttpResponse::directory(serverConf& serv, locationConf& loc, std::st
 	/****** OPEN DIRECTORY ******/
 	DIR *direct = opendir(path.c_str());
 	if (!direct && errno == EACCES)
+<<<<<<< HEAD
+=======
+	{
+>>>>>>> 4a93c9a6c370af091864a7663e09b4d5aded0b2d
 		return error_response(serv, loc, 403);
 	if (!direct && (errno == EMFILE || errno == ENFILE))
 		return error_response(serv, loc, 500);

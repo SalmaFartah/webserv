@@ -9,6 +9,7 @@
 #include <iostream>
 #include <cstring>
 #include <cerrno>
+#include <fcntl.h>
 #include "../../build_response/HttpResponse.hpp"
 #include "../../parse_config/inc/Fill.hpp"
 
