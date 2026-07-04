@@ -54,19 +54,19 @@ std::string FileHandler::handleUpload(ReqContent& request, serverConf& server, l
     for (it = request.uploads.begin(); it != request.uploads.end(); it++)
     {
         std::ofstream multiFile;
-        multiFile.open(direPath + it->first.c_str(), std::ios::binary | std::ios::trunc);
+        multiFile.open((direPath + it->first).c_str(), std::ios::binary | std::ios::trunc);
         if (!multiFile.is_open())
         {
             error = true;
             return responseBuilder.error_response(server, loc, 500);
         }
         multiFile << it->second;
-        std::cout << "File uploaded successfully to: " << direPath + it->first.c_str() << std::endl;
+        std::cout << "File uploaded successfully to: " << (direPath + it->first).c_str() << std::endl;
     }
     if (!request.uploads.size())
     {
         direPath += generateFilename();
-        notMulti.open(direPath, std::ios::binary | std::ios::trunc);
+        notMulti.open(direPath.c_str(), std::ios::binary | std::ios::trunc);
         if (!notMulti.is_open())
         {
             error = true;

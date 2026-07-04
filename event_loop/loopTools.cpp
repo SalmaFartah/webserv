@@ -157,12 +157,12 @@ bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 	{
 
 		infoClie[clieIdx].clieFile.append(buffer, reading);
-		std::cout << "----------REQUEST FROM [" << client.fd << "]---------\n" << infoClie[clieIdx].clieFile << "\n---------------------\n";
+		// std::cout << "----------REQUEST FROM [" << client.fd << "]---------\n" << infoClie[clieIdx].clieFile << "\n---------------------\n";
 		infoClie[clieIdx].resp  = infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf);
 	}
     else if (reading == 0) // connection closed cleanly by the client (TCP FIN)
 	{
-		std::cout << "client: " << client.fd << " disconnected" << '\n';
+		// std::cout << "client: " << client.fd << " disconnected" << '\n';
 		if (infoClie[clieIdx].request.route.isCGI)
 		{
 			CGIResult cgidead = infoClie[clieIdx].request.CGIobj;
@@ -295,7 +295,9 @@ void loopTools::CgiTimout()
 			else
 				other_key = it->second.stdinPipe;
 			cgiMap.erase(other_key);
-			it = cgiMap.erase(it);
+			std::map<int, CGIResult>::iterator tmp = it;
+			++it;
+			cgiMap.erase(tmp);
 		}
 		else
 			++it;

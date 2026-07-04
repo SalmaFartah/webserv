@@ -10,6 +10,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <algorithm>
+#include <ctime>
 #include "parse.hpp"
 #define MAX_CGI_PROCESSES 10
 
@@ -119,6 +120,5 @@ class Fill
 		virtual ~Fill();
 };
 
-void print_config(std::vector<serverConf> conf);
 void checkPortConflict(std::vector<serverConf>);
 std::string to_string(int val);

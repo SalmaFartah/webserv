@@ -12,12 +12,14 @@
 #include <unistd.h>
 #include <poll.h>
 #include <stdbool.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include "../parse_config/inc/parse.hpp"
 #include "../parse_config/inc/FillLocation.hpp"
 #include "../parse_config/inc/FillServer.hpp"
 #include "../parse_request/inc/HttpRequest.hpp"
 #include "../route/RouteResp.hpp"
-#define BUFFER_SZ 1000
+#define BUFFER_SZ 1024
 
 struct myclients
 {
