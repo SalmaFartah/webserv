@@ -19,7 +19,7 @@ class FileHandler
 public:
     bool error;
     
-    FileHandler() : error(false) {}
+    FileHandler();
     
     std::string handleUpload(ReqContent& request, serverConf& server, locationConf& loc, bool keepAlive);
     

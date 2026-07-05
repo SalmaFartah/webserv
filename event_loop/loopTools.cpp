@@ -19,7 +19,7 @@ loopTools::loopTools(std::vector<serverConf>& servers) : isconnected(false), ser
 			int serverFd = socket(AF_INET, SOCK_STREAM, 0);
 			if (serverFd < 0)
 			{
-				perror("socket: ");
+				// perror("socket: ");
 				close_fds();
 				throw std::runtime_error("");
 			}
@@ -53,7 +53,7 @@ loopTools::loopTools(std::vector<serverConf>& servers) : isconnected(false), ser
 			// attaches the socket to a specific port on the machine
 			if (bind(serverFd, (const sockaddr *)&servaddr, sizeof(servaddr)) < 0)
 			{
-				perror("bind: ");
+				// perror("bind: ");
 				close_fds();
 				throw std::runtime_error("");
 			}
@@ -62,7 +62,7 @@ loopTools::loopTools(std::vector<serverConf>& servers) : isconnected(false), ser
 		// backlog — how many connections can queue up waiting to be accepted
 			if (listen(serverFd, 128) < 0)
 			{
-				perror("listen: ");
+				// perror("listen: ");
 				close_fds();
 				throw std::runtime_error("");
 			}
@@ -96,8 +96,8 @@ void loopTools::newConnection(struct pollfd& server)
 	// the second parametre: the operating system kernel fills it in with the incoming client's network identity once a connection lands
 	// If your server does not care about the IP address or port of incoming clients, we can set sersock, NULL, NULL 
 	int cli_sock = accept(server.fd, (sockaddr *)&cliaddr, &client_len);
-	if (cli_sock < 0)
-		perror("accept: ");
+	// if (cli_sock < 0)
+	// 	perror("accept: ");
 	// if (cli_sock >= 0)
 	// 	printf("[SERVER] New connection accepted on FD: %d\n", cli_sock);
 
@@ -149,7 +149,7 @@ bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 	ssize_t reading = read(client.fd, buffer, sizeof(buffer)); // our read is non blocking io mean if our kernel buffer is empty read will not frozen here and wait
 	if (reading < 0)
 	{
-		perror("read ");
+		// perror("read ");
 		closeClient(client.fd, clieIdx, idx);
 		return false;
 	}
@@ -187,7 +187,7 @@ bool loopTools::CgiWrite(CGIResult &cgiWr, size_t &i)
 	ssize_t n = write(vecFds[i].fd, cgiWr.body.data() + cgiWr.ofssetCgi, cgiWr.body.size() - cgiWr.ofssetCgi);
 	if (n < 0)
 	{
-		perror("writeCgi < 0 ");
+		// perror("writeCgi < 0 ");
 		eraseChild(cgiWr, 500);
 		cgiMap.erase(cgiWr.stdinPipe);
 		cgiMap.erase(cgiWr.stdoutPipe);
@@ -196,10 +196,6 @@ bool loopTools::CgiWrite(CGIResult &cgiWr, size_t &i)
 	}
 	if (n > 0)
 		cgiWr.ofssetCgi += n;
-	if (n == 0)
-	{
-		perror("writeCgi = 0");
-	}
 	if (cgiWr.body.size() == cgiWr.ofssetCgi) // writing everything
 	{
 		// std::cout << "--All Body written to the cgiChild--\n";
@@ -219,7 +215,7 @@ bool loopTools::CgiRead(CGIResult& cgiRd, size_t &i)
 	ssize_t reading = read(vecFds[i].fd, buffer, sizeof(buffer));
 	if (reading < 0)
 	{
-		perror("read ");
+		// perror("read ");
 		eraseChild(cgiRd, 500);
 		cgiMap.erase(cgiRd.stdoutPipe);
 		i--;
@@ -362,14 +358,14 @@ void loopTools::mainLoop()
 				ssize_t n = write(vecFds[i].fd, infoClie[newidx].resp.data() + infoClie[newidx].ofssetResp, infoClie[newidx].resp.size() - infoClie[newidx].ofssetResp);
 				if (n < 0)
 				{
-					perror("write ");
+					// perror("write ");
 					closeClient(vecFds[i].fd, newidx, &i);
 					continue;
 				}
 				else if (n > 0)
 					infoClie[newidx].ofssetResp += n;
-				else if (n == 0)
-					perror("write ");
+				// else if (n == 0)
+				// 	perror("write ");
 				if (infoClie[newidx].resp.size() == infoClie[newidx].ofssetResp) // writing everything
 				{
 					vecFds[i].events = POLLIN;

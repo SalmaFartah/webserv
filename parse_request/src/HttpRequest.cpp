@@ -379,7 +379,11 @@ std::string HttpRequest::parse_request(std::string request, serverConf *conf)
 			return resp.error_response(*conf, empty, 400);
 		}
 		parseState = INBODY;
-		rtype = KEEP_ALIVE;
+		// rtype = KEEP_ALIVE;
+		if (req.connection)
+			rtype = KEEP_ALIVE;
+		else
+			rtype = DONE;
 	}
 	if (!parse_body(HeaderEnd + 4, request))
 		return resp.error_response(*conf, empty, errorCode);

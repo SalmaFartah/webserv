@@ -1,6 +1,13 @@
 #include "../inc/Fill.hpp"
 #include <limits>
 
+HasPort::HasPort(int p) : port(p) {}
+
+bool HasPort::operator()(const std::pair<std::string, int>& p) const
+{
+    return p.second == port;
+}
+
 bool Fill::str_digit(std::string str)
 {
 	for (size_t i = 0; i < str.size(); i++)

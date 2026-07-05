@@ -32,11 +32,8 @@ typedef struct CGIResult
 struct HasPort
 {
     int port;
-    HasPort(int p) : port(p) {}
-    bool operator()(const std::pair<std::string, int>& p) const
-    {
-        return p.second == port;
-    }
+    HasPort(int p);
+    bool operator()(const std::pair<std::string, int>& p) const;
 };
 
 typedef struct

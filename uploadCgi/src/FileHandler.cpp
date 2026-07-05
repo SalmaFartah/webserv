@@ -1,5 +1,6 @@
 #include "../inc/FileHandler.hpp"
 
+FileHandler::FileHandler() : error(false) {}
 bool FileHandler::isUploadDirValid(const std::string& uploadDir)
 {
     struct stat st;
