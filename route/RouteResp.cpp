@@ -22,7 +22,7 @@ int RouteResp::locationMatcha(serverConf *conf, ReqContent& cont, int code)
     if (winnerPath.empty())
     {
         locationConf tmp;
-        std::cout << "location error call response 404 Not Found: " << winnerPath << "\n";
+        // std::cout << "location error call response 404 Not Found: " << winnerPath << "\n";
         response = respObj.error_response(*conf, tmp, 404);
         return -1;
     }
@@ -44,15 +44,15 @@ int RouteResp::checkDire(std::string &fullPath, serverConf *conf, locationConf& 
         {
             case ENOENT: case ENOTDIR: // the file or directory does not exist at all or component of the path is not a directory
                 response = respObj.error_response(*conf, location, 404);
-                std::cout << "directory or file not found call response 404 Not Found: " << winnerPath << "\n";
+                // std::cout << "directory or file not found call response 404 Not Found: " << winnerPath << "\n";
                 break;
             case EACCES: // permission denied while accessing a component of the path.
                 response = respObj.error_response(*conf, location, 403);
-                std::cout << "permission denied call response 403 Not Found: " << winnerPath << "\n";
+                // std::cout << "permission denied call response 403 Not Found: " << winnerPath << "\n";
                 break;
             case ENAMETOOLONG: // Path name is too long
                 response = respObj.error_response(*conf, location, 414);
-                std::cout << "Path name is too long call response 414 Not Found: " << winnerPath << "\n";
+                // std::cout << "Path name is too long call response 414 Not Found: " << winnerPath << "\n";
                 break;
             // response = take response and set it;
         }
@@ -88,14 +88,14 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResul
     if (!conf->locations[winnerIdx].methods.count(cont.method))
     {
         response = respObj.error_response(*conf, conf->locations[winnerIdx], 405);
-        std::cout << "method error i must call response 405 Method Not Allowed: " << winnerIdx << "\n";
+        // std::cout << "method error i must call response 405 Method Not Allowed: " << winnerIdx << "\n";
         return -1;
     }
     /* BODY SIZE */
     if (cont.body.size() > conf->locations[winnerIdx].body_size)
     {
         response = respObj.error_response(*conf, conf->locations[winnerIdx], 413);
-        std::cout << "body size error call response for 413 Payload Too Large: " << conf->locations[winnerIdx].body_size << "\n";
+        // std::cout << "body size error call response for 413 Payload Too Large: " << conf->locations[winnerIdx].body_size << "\n";
         return -1;
     }
 
@@ -103,7 +103,7 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResul
     if (conf->locations[winnerIdx].http_redire.first)
     {
         response = respObj.redirect(conf->locations[winnerIdx].http_redire.first, conf->locations[winnerIdx].http_redire.second, cont.connection);
-        std::cout << "RETURN DIRECTIVE call response for 301 Moved Permanently or 302 Found: " << conf->locations[winnerIdx].http_redire.first << "\n";
+        // std::cout << "RETURN DIRECTIVE call response for 301 Moved Permanently or 302 Found: " << conf->locations[winnerIdx].http_redire.first << "\n";
         return 0;
     }
 
@@ -112,12 +112,12 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResul
     
     if (conf->locations[winnerIdx].root[conf->locations[winnerIdx].root.size() - 1] == '/')
         finalPath.erase(conf->locations[winnerIdx].root.size(), 1);
-    std::cout << "FINAL PATH: " << finalPath << "\n";
+    // std::cout << "FINAL PATH: " << finalPath << "\n";
 
     /* CHECK UPLOAD */
     if (cont.method == "POST" && !conf->locations[winnerIdx].upload_store.empty())
     {
-        std::cout << "ITS UPLOAD CALL: " << conf->locations[winnerIdx].upload_store << "\n";
+        // std::cout << "ITS UPLOAD CALL: " << conf->locations[winnerIdx].upload_store << "\n";
         response = upload.handleUpload(cont, *conf, conf->locations[winnerIdx], cont.connection);
         if (upload.error)
             return -1;
@@ -131,7 +131,7 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResul
         return -1;
     if (cont.method == "DELETE")
     {
-        std::cout << "ITS A DELETE CALL " << "\n";
+        // std::cout << "ITS A DELETE CALL " << "\n";
         response = respObj.delete_method(*conf, conf->locations[winnerIdx], finalPath, cont.connection);
         if (respObj.error)
             return -1;
@@ -139,10 +139,10 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResul
     }
     if (cont.method == "GET" && S_ISDIR(st.st_mode)) // if a dire
     {
-        std::cout << "ITS A DIRECTORY WITH GET: " << conf->locations[winnerIdx].root << "\n";
+        // std::cout << "ITS A DIRECTORY WITH GET: " << conf->locations[winnerIdx].root << "\n";
         if (finalPath[finalPath.size() - 1] != '/')
         {
-            std::cout << "<<<<<<<<<<<<<<<<<<<<<<<RETURN DIRECTIVE call response 301 Found: >>>>>>>" << finalPath << "\n";
+            // std::cout << "<<<<<<<<<<<<<<<<<<<<<<<RETURN DIRECTIVE call response 301 Found: >>>>>>>" << finalPath << "\n";
             response = respObj.redirect(301, cont.request_target + "/", cont.connection);
             return 0;
         }
@@ -159,7 +159,7 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResul
         if (!conf->locations[winnerIdx].cgi_extension.empty() \
         && posDot != std::string::npos && transLower(finalPath, conf->locations[winnerIdx].cgi_extension, posDot)) // if the cgi extension match the one in request target and a Dot in the last of string
         {
-            std::cout << "ITS A CGI CALL: " << finalPath.substr(posDot) << "\n";
+            // std::cout << "ITS A CGI CALL: " << finalPath.substr(posDot) << "\n";
 
             Cgi.handleCGIRequest(cont, *conf, conf->locations[winnerIdx], CgiRes);
             if (CgiRes.statusCode)
@@ -173,11 +173,11 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResul
         {
             //403 Method Not Allowed
             response = respObj.error_response(*conf, conf->locations[winnerIdx], 403);
-            std::cout << "HERE\n";
+            // std::cout << "HERE\n";
         }
         else if (cont.method == "GET")// static file
         {
-            std::cout << "ITS A STATIC FILE CALL WITH GET: "  << "\n";
+            // std::cout << "ITS A STATIC FILE CALL WITH GET: "  << "\n";
             response = respObj.static_file(*conf, conf->locations[winnerIdx], finalPath, cont.connection);
         }
         if (respObj.error)
@@ -185,7 +185,7 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResul
         return 0;
     }
     /* POST AND FOLDER AND NOT UPLOAD */
-    std::cout << "403 Forbidden" << "\n";
+    // std::cout << "403 Forbidden" << "\n";
     response = respObj.error_response(*conf, conf->locations[winnerIdx], 403);
     // 403 Forbidden
     return -1;

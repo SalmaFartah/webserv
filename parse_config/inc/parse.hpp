@@ -22,6 +22,6 @@ class conf
 		void read_file(std::ifstream& conf);
 		std::vector<std::pair<tokenType, std::string> > getTokenz() const;
 		void fillWords(std::ifstream& confWords, int c); 
-		// void print_tokenz();
+		// void _tokenz();
 		~conf();
 };

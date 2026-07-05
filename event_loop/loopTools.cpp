@@ -98,8 +98,8 @@ void loopTools::newConnection(struct pollfd& server)
 	int cli_sock = accept(server.fd, (sockaddr *)&cliaddr, &client_len);
 	if (cli_sock < 0)
 		perror("accept: ");
-	if (cli_sock >= 0)
-		printf("[SERVER] New connection accepted on FD: %d\n", cli_sock);
+	// if (cli_sock >= 0)
+	// 	printf("[SERVER] New connection accepted on FD: %d\n", cli_sock);
 
 	fcntl(cli_sock, F_SETFL, O_NONBLOCK);
 
@@ -149,7 +149,7 @@ bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 	ssize_t reading = read(client.fd, buffer, sizeof(buffer)); // our read is non blocking io mean if our kernel buffer is empty read will not frozen here and wait
 	if (reading < 0)
 	{
-		perror("read: ");
+		perror("read ");
 		closeClient(client.fd, clieIdx, idx);
 		return false;
 	}

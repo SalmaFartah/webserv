@@ -61,7 +61,7 @@ std::string FileHandler::handleUpload(ReqContent& request, serverConf& server, l
             return responseBuilder.error_response(server, loc, 500);
         }
         multiFile << it->second;
-        std::cout << "File uploaded successfully to: " << (direPath + it->first).c_str() << std::endl;
+        // std::cout << "File uploaded successfully to: " << (direPath + it->first).c_str() << std::endl;
     }
     if (!request.uploads.size())
     {
@@ -73,7 +73,7 @@ std::string FileHandler::handleUpload(ReqContent& request, serverConf& server, l
             return responseBuilder.error_response(server, loc, 500);
         }
         notMulti << request.body;
-        std::cout << "File uploaded successfully to: " << direPath << std::endl;
+        // std::cout << "File uploaded successfully to: " << direPath << std::endl;
     }
 
     return responseBuilder.build(201, "<html><body><h1>201 Created</h1><p>File uploaded successfully</p></body></html>", "text/html", keepAlive);

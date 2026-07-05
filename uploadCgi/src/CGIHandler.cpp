@@ -92,7 +92,7 @@ std::string CGIHandler::buildCGIResponse(const CGIResult& result, bool keepAlive
             body = output.substr(endLine + 2);
         }
     }
-    std::cout << "body response: " << body << "\n";
+    // std::cout << "body response: " << body << "\n";
     return responseBuilder.build(200, body, contentType, keepAlive);
 }
 

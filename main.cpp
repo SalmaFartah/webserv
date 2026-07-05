@@ -28,11 +28,9 @@ int main(int ac, char *av[])
 		std::cerr << e.what() << '\n';
 		return 1;
 	}
-	// print_config(serv);
 	
 	// i must read all the file and tooks all the values as tokenz except whitesapces and comments;
 	// --------------------------------------------------------------------------------------------
-	// confObj.print_tokenz(); // if u want to Print each one
 	Fileconf.close();
 
 
