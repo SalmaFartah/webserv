@@ -24,7 +24,9 @@ class HttpRequest
 		size_t content_length, current_pos;
 		HttpResponse resp;
 		locationConf empty;
-
+		size_t pos0, size;
+		size_t HeaderEnd;
+		size_t HeaderBegin;
 		bool isprintSTR(std::string);
 		void trim_WS(std::string& str);
 

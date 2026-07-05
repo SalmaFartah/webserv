@@ -202,7 +202,7 @@ bool loopTools::CgiWrite(CGIResult &cgiWr, size_t &i)
 	}
 	if (cgiWr.body.size() == cgiWr.ofssetCgi) // writing everything
 	{
-		std::cout << "--All Body written to the cgiChild--\n";
+		// std::cout << "--All Body written to the cgiChild--\n";
 		close(vecFds[i].fd);
 		cgiMap.erase(vecFds[i].fd);
 		vecFds.erase(vecFds.begin() + i);
@@ -378,7 +378,7 @@ void loopTools::mainLoop()
 					// std::cout << "SERVER SENDING RESPONSE..\n";
 					if (infoClie[newidx].request.rtype != 0 && infoClie[newidx].request.rtype != 3)
 					{
-						std::cout << "client: " << vecFds[i].fd << " disconnected after response" << '\n';
+						// std::cout << "client: " << vecFds[i].fd << " disconnected after response" << '\n';
 						closeClient(vecFds[i].fd, newidx, &i);
 					}
 				}

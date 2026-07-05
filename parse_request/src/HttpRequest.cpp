@@ -194,7 +194,7 @@ bool HttpRequest::get_size(size_t& size, std::string bodyreq, size_t start, size
 
 bool HttpRequest::handle_chunked(std::string bodyreq)
 {
-		static size_t pos0 = 0, size = 0;
+		// static size_t pos0 = 0, size = 0;
 		size_t pos1 = 0, pos2;
 		std::string chunk;
 		while (1)
@@ -356,8 +356,8 @@ std::string HttpRequest::parse_request(std::string request, serverConf *conf)
 {
 	if (parseState == INHEADER)
 		request = request.substr(current_pos);
-	static size_t HeaderEnd;
-	static size_t HeaderBegin;
+	// static size_t HeaderEnd;
+	// static size_t HeaderBegin;
 
 	if (parseState == INHEADER)
 	{
@@ -401,5 +401,9 @@ HttpRequest::HttpRequest()
 	bodyState = INSIZE;
 	parseState = INHEADER;
 	req.connection = true;
+	pos0 = 0;
+	size = 0;
+	HeaderBegin = 0;
+	HeaderEnd = 0;
 }
 HttpRequest::~HttpRequest(){}
