@@ -10,18 +10,30 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <algorithm>
+#include <ctime>
 #include "parse.hpp"
+#define MAX_CGI_PROCESSES 10
 
 enum state { LOCATION, SERVER };
+typedef struct CGIResult
+{
+    int         statusCode;
+    pid_t       pidChild;
+    size_t      clie_fd;    // ← the client waiting for response
+    int         stdinPipe;
+    int         stdoutPipe;
+    std::string output;       // accumulate response
+    std::string body;         // body to write to script
+    size_t      ofssetCgi; // how much of body sent so far
+    std::time_t start_time;
+    CGIResult();
+} CGIResult;
 
 struct HasPort
 {
     int port;
-    HasPort(int p) : port(p) {}
-    bool operator()(const std::pair<std::string, int>& p) const
-    {
-        return p.second == port;
-    }
+    HasPort(int p);
+    bool operator()(const std::pair<std::string, int>& p) const;
 };
 
 typedef struct
@@ -33,6 +45,7 @@ typedef struct
 	std::map<std::string, std::string> headers;
 	std::string body;
     bool connection;
+    std::map<std::string, std::string> uploads;
 } ReqContent;
 
 typedef struct locationConf
@@ -104,6 +117,5 @@ class Fill
 		virtual ~Fill();
 };
 
-void print_config(std::vector<serverConf> conf);
 void checkPortConflict(std::vector<serverConf>);
 std::string to_string(int val);

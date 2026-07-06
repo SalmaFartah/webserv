@@ -8,6 +8,9 @@ std::string HttpResponse::getReasonPhrase(int code)
 		case 200:
 			reason_phrase = "Ok";
 			break;
+		case 201:
+			reason_phrase = "Created";
+			break;
 		case 204:
 			reason_phrase = "No Content";
 			break;
@@ -43,6 +46,15 @@ std::string HttpResponse::getReasonPhrase(int code)
 			break;
 		case 501:
 			reason_phrase = "Not Implemented";
+			break;
+		case 502:
+			reason_phrase = "Bad Gateway";
+			break;
+		case 503:
+			reason_phrase = "Service Unavailable";
+			break;
+		case 504:
+			reason_phrase = "Gateway Timeout";
 			break;
 	}
 	return reason_phrase;
@@ -119,12 +131,13 @@ std::string HttpResponse::error_response(serverConf& server, locationConf& locat
 		fileName = server.error_page[errorCode];
 	if (!fileName.empty())
 	{
+		// std::cout << "is empty\n";
 		std::string ext("default");
 		size_t pos = fileName.find(".");
 		if (pos && pos != std::string::npos)
 			ext = fileName.substr(pos + 1);
 		std::transform(ext.begin(), ext.end(), ext.begin(), tolower);
-		std::ifstream errFile(fileName, std::ios::binary);
+		std::ifstream errFile(fileName.c_str(), std::ios::binary);
 		if (errFile.is_open())
 		{
 			if (!MIME_table.count(ext))
@@ -149,7 +162,7 @@ std::string HttpResponse::delete_method(serverConf& serv, locationConf& loc, con
 
 std::string HttpResponse::static_file(serverConf& serv, locationConf& loc, const std::string& path, bool con)
 {
-	std::ifstream file(path, std::ios::binary);
+	std::ifstream file(path.c_str(), std::ios::binary);
 	if (!file.is_open())
 		return error_response(serv, loc, 500);
 	std::ostringstream body;
@@ -164,15 +177,21 @@ std::string HttpResponse::static_file(serverConf& serv, locationConf& loc, const
 	return build(200, body.str(), ctype, con);
 }
 
-std::string HttpResponse::directory(serverConf& serv, locationConf& loc, const std::string& path, bool con)
+std::string HttpResponse::directory(serverConf& serv, locationConf& loc, std::string path, bool con)
 {
+	if (path[path.size() - 1] != '/')
+		path += "/";
 	if (!loc.index.empty())
 	{
 		struct stat st;
 		for (std::vector<std::string>::iterator it = loc.index.begin(); it != loc.index.end(); it++)
 		{
 			if (stat((path + *it).c_str(), &st) == 0 && (st.st_mode & S_IFREG))
+			{
+				
+				// std::cout << "index Path: " << path + *it << "\n";
 				return static_file(serv, loc, path + *it, con);
+			}
 		}
 	}
 	if (!loc.autoindex)
@@ -192,7 +211,7 @@ std::string HttpResponse::directory(serverConf& serv, locationConf& loc, const s
 	while ((read = readdir(direct)))
 	{
 		if (std::string(read->d_name) != "." && std::string(read->d_name) != "..")
-			body << "<a href=\"" << read->d_name << "\">" << read->d_name << "</a>";
+			body << "<a href=\"" << read->d_name << "\">" << read->d_name << "</a><br>";
 	}
 
 	/****** CLOSE DIRECTORY && BUILD RESPONSE ******/

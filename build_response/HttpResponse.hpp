@@ -15,16 +15,15 @@ class HttpResponse
 
 		std::string getErrorPage(int, const std::string&);
 		std::string getReasonPhrase(int);
-		std::string get_errbody(int, const std::string&, serverConf&, locationConf&, std::string&);
 		void initMimeTable();
-		std::string build(int, const std::string&, const std::string&, bool);
 	public:
+		std::string build(int, const std::string&, const std::string&, bool);
 		HttpResponse();
 		bool error;
 		std::string redirect(int, const std::string&, bool);
 		std::string delete_method(serverConf&, locationConf&, const std::string&, bool);
 		std::string static_file(serverConf&, locationConf&, const std::string&, bool);
-		std::string directory(serverConf&, locationConf&, const std::string&, bool);
+		std::string directory(serverConf&, locationConf&, std::string, bool);
 		std::string error_response(serverConf&, locationConf&, int);
 		~HttpResponse();
 };
