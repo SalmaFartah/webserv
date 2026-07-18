@@ -33,11 +33,14 @@ struct myclients
 };
 
 
+
 class loopTools
 {
     private:
+        std::set<std::string> session;
         RouteResp realResp;
         bool isconnected;
+        std::map<std::string, std::string> cookie;
         std::vector<struct myclients> infoClie;
         std::map<int, struct CGIResult> cgiMap;
         std::vector<struct pollfd> vecFds;

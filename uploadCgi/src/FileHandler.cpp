@@ -26,11 +26,10 @@ std::string FileHandler::generateFilename()
     return ss.str();
 }
 
-std::string FileHandler::handleUpload(ReqContent& request, serverConf& server, locationConf& loc, bool keepAlive)
+std::string FileHandler::handleUpload(ReqContent& request, serverConf& server, locationConf& loc, bool keepAlive, HttpResponse &responseBuilder)
 {
     std::map<std::string, std::string>::iterator it;
     error = false;
-    HttpResponse responseBuilder;
     
     if (request.body.empty()) 
     {

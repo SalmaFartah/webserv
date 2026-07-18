@@ -12,11 +12,12 @@ class HttpResponse
 		std::string methods;
 		std::string url;
 		std::map<std::string, std::string> MIME_table;
-
+		std::string cookiz;
 		std::string getErrorPage(int, const std::string&);
 		std::string getReasonPhrase(int);
 		void initMimeTable();
 	public:
+		void setCookie(const std::string &cookie);
 		std::string build(int, const std::string&, const std::string&, bool);
 		HttpResponse();
 		bool error;
