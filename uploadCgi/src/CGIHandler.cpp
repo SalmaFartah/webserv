@@ -52,7 +52,7 @@ std::map<std::string, std::string> CGIHandler::buildCGIEnv(ReqContent& request, 
 }
 
 
-std::string CGIHandler::buildCGIResponse(const CGIResult& result, bool keepAlive)
+std::string CGIHandler::buildCGIResponse(const CGIResult& result, bool keepAlive, HttpResponse& responseBuilder)
 {
     const std::string& output = result.output;
     if (output.find("HTTP/") == 0 || output.find("Status:") == 0) 
@@ -110,7 +110,4 @@ void CGIHandler::handleCGIRequest(ReqContent& request, serverConf& server, locat
     /*EXECUTION*/
     executor.executeCGI(scriptPath, location.cgi_pass, envVars, request.body, CgiRes);
 
-    // if (result.statusCode != 200)
-    //     return error = true, responseBuilder.error_response(server, location, result.statusCode);
-    // return buildCGIResponse(result, keepAlive);
 }

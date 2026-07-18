@@ -2,6 +2,11 @@
 
 RouteResp::RouteResp() : winnerIdx(0), isCGI(false) {}
 
+void RouteResp::passCookie(const std::string& cookieResp)
+{
+    respObj.setCookie(cookieResp);
+}
+
 RouteResp::~RouteResp(){}
 
 const std::string& RouteResp::getResponse() const
@@ -118,7 +123,7 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResul
     if (cont.method == "POST" && !conf->locations[winnerIdx].upload_store.empty())
     {
         // std::cout << "ITS UPLOAD CALL: " << conf->locations[winnerIdx].upload_store << "\n";
-        response = upload.handleUpload(cont, *conf, conf->locations[winnerIdx], cont.connection);
+        response = upload.handleUpload(cont, *conf, conf->locations[winnerIdx], cont.connection, respObj);
         if (upload.error)
             return -1;
         return 0;
@@ -160,7 +165,7 @@ int RouteResp::routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResul
         && posDot != std::string::npos && transLower(finalPath, conf->locations[winnerIdx].cgi_extension, posDot)) // if the cgi extension match the one in request target and a Dot in the last of string
         {
             // std::cout << "ITS A CGI CALL: " << finalPath.substr(posDot) << "\n";
-
+            
             Cgi.handleCGIRequest(cont, *conf, conf->locations[winnerIdx], CgiRes);
             if (CgiRes.statusCode)
             {

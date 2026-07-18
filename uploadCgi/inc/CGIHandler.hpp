@@ -18,17 +18,15 @@
 
 class CGIHandler 
 {
-public:
-    // bool error;
-    HttpResponse responseBuilder;
-    CGIExecutor executor;
-    void handleCGIRequest(ReqContent& request, serverConf& server, locationConf& location,CGIResult& CgiRes);
-    
-
-    std::map<std::string, std::string> buildCGIEnv(ReqContent& request, locationConf& loc, serverConf& srv, std::string& scriptPath);
-    
-
-    std::string buildCGIResponse(const CGIResult& result, bool keepAlive);
+    public:
+        // bool error;
+        // HttpResponse responseBuilder;
+        CGIExecutor executor;
+        void handleCGIRequest(ReqContent& request, serverConf& server, locationConf& location,CGIResult& CgiRes);
+        
+        std::map<std::string, std::string> buildCGIEnv(ReqContent& request, locationConf& loc, serverConf& srv, std::string& scriptPath);
+        
+        std::string buildCGIResponse(const CGIResult& result, bool keepAlive, HttpResponse& responseBuilder);
 };
 
 

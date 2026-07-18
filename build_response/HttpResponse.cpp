@@ -1,5 +1,10 @@
 #include "HttpResponse.hpp"
 
+void HttpResponse::setCookie(const std::string &cookie)
+{
+	cookiz = cookie;
+}
+
 std::string HttpResponse::getReasonPhrase(int code)
 {
 	std::string reason_phrase;
@@ -88,6 +93,7 @@ void HttpResponse::initMimeTable()
 
 std::string HttpResponse::build(int code, const std::string& body, const std::string& ctype, bool con)
 {
+	// call inherited obj and function
 	std::stringstream response;
 	std::string connType("close");
 	if (con)
@@ -102,8 +108,11 @@ std::string HttpResponse::build(int code, const std::string& body, const std::st
 		response << "Allow: " << methods << "\r\n";
 	if (code == 301 || code == 302)
 		response << "Location: " << url << "\r\n";
+	if (cookiz != "cookieExist")
+		response << cookiz << "\r\n";
 	response << "\r\n";
 	response << body;
+	// std::cout << "ResPOnSE>>>>>: " << response.str() << "\n";
 	return response.str();
 }
 
@@ -227,10 +236,15 @@ std::string HttpResponse::redirect(int code, const std::string& URL, bool con)
 	return build(code, "", "", con);
 }
 
+// HttpResponse::HttpResponse(Cookie& cookiz) : cook(&cookiz)
+// {
+// }
+
 HttpResponse::HttpResponse()
 {
 	initMimeTable();
 	error = false;
 }
+
 
 HttpResponse::~HttpResponse(){}

@@ -39,41 +39,6 @@ void CGIExecutor::freeEnvArray(char** envArray, size_t count)
     delete[] envArray;
 }
 
-// std::string CGIExecutor::readWithTimeout(int fd, int childid, size_t timeout)
-// {
-//     std::string result;
-//     char buffer[4096];
-//     fd_set readFds;
-//     struct timeval tv;
-    
-//     while (true) 
-//     {
-//         FD_ZERO(&readFds);
-//         FD_SET(fd, &readFds);
-        
-//         tv.tv_sec = timeout;
-//         tv.tv_usec = 0;
-        
-        
-//         int selectResult = select(fd + 1, &readFds, NULL, NULL, &tv);
-        
-//         if (selectResult <= 0)  // timeout expired
-//         {
-//             kill(childid, SIGKILL);   // kill the hanging script
-//             return "";
-//         }
-//         if (FD_ISSET(fd, &readFds)) 
-//         {
-//             ssize_t bytesRead = read(fd, buffer, sizeof(buffer) - 1);
-//             if (bytesRead <= 0)
-//                 break;
-//             result.append(buffer, bytesRead);
-//         }
-//     }
-    
-//     return result;
-// }
-
 void CGIExecutor::executeCGI(const std::string& scriptPath, const std::string& cgi_pass, \
 const std::map<std::string, std::string>& envVars, const std::string& requestBody, CGIResult& CgiRes)
 {
@@ -84,7 +49,6 @@ const std::map<std::string, std::string>& envVars, const std::string& requestBod
         CgiRes.statusCode = 500;
         return ;
     }
-    // fcntl(stdinPipe[0], F_SETFL, O_NONBLOCK);
     pid_t pid = fork();
 
     if (pid == -1)
@@ -125,23 +89,4 @@ const std::map<std::string, std::string>& envVars, const std::string& requestBod
     CgiRes.pidChild = pid;
     CgiRes.body = requestBody;
     CgiRes.ofssetCgi = 0;
-    // std::cout << "In EXECUTE " << CgiRes.body << "\n";
-    // if (!requestBody.empty())
-    //     write(stdinPipe[1], requestBody.c_str(), requestBody.size());
-
-    // close(stdinPipe[1]);
-    
-    // result.output = readWithTimeout(stdoutPipe[0], pid, timeout);
-    // close(stdoutPipe[0]);
-
-    // int childStatus;
-    // waitpid(pid, &childStatus, 0);
-    
-    // if (WIFEXITED(childStatus) && WEXITSTATUS(childStatus) == 0) 
-    //     result.statusCode = 200;
-    // else if (WIFSIGNALED(childStatus) && WTERMSIG(childStatus) == 9)
-    //     result.statusCode = 504;
-    // else
-    //     result.statusCode = 500;
-    // return result;
 }
