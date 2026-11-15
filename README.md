@@ -1,290 +1,201 @@
-# *This project has been created as part of the 42 curriculum by sfartah, ychedmi, kaneddam.*
-
 # Webserv
 
-## Description
+A lightweight HTTP/1.1 web server built from scratch in **C++98** as part of the 42 curriculum.
 
-**Webserv** is an HTTP/1.1 web server written entirely in **C++98**.
+Webserv is designed to make the fundamentals of web-server engineering visible: socket management, HTTP message parsing, request routing, response generation, configuration handling, file serving, uploads, and CGI execution. It uses non-blocking sockets and an event-driven loop based on `poll()` to serve multiple clients without creating one thread per connection.
 
-The purpose of this project is to understand how a web server works by implementing one from scratch without using external networking or HTTP libraries. The server relies on non-blocking sockets and an event-driven architecture to efficiently handle multiple client connections simultaneously.
+> Developed by **Salma Fartah**, **Yasmine Chedmi**, and **Khadija Neddam**.
 
-The implementation supports configurable virtual servers through a configuration file and provides a subset of the features commonly found in modern web servers.
+## What the project can do
 
-### Features
+- Serve static files and directories over HTTP/1.1.
+- Handle `GET`, `POST`, and `DELETE` requests.
+- Listen on one or more configured ports and select the appropriate virtual-server configuration.
+- Route requests through configurable `location` blocks.
+- Generate directory listings with `autoindex`.
+- Apply custom error responses for common HTTP failures.
+- Enforce request-body limits and return `413 Payload Too Large` when required.
+- Redirect directory requests when the target path is missing its trailing slash.
+- Accept file uploads and store them in a configured directory.
+- Execute CGI programs for configured file extensions and forward their output to the client.
+- Preserve HTTP connection behavior such as `Connection: keep-alive`.
 
-- HTTP/1.1 support
-- Multiple virtual servers
-- Multiple listening ports
-- Non-blocking sockets using `poll()`
-- GET, POST and DELETE methods
-- Static file serving
-- Autoindex
-- Custom error pages
-- File uploads
-- CGI execution
-- HTTP redirections
-- Configurable locations
-- Client body size limitation
-- Persistent connections (Keep-Alive)
+## Main concepts
 
----
+### Event-driven networking
 
-# Architecture
+The server creates listening sockets, accepts clients, and monitors client and CGI file descriptors with `poll()`. Readable and writable events are processed without blocking the other connections handled by the server.
 
-The project is organized into several independent modules.
+### Configuration parsing
 
-### Server
+A configuration file is tokenized and parsed into server and location settings. These settings control listening ports, document roots, allowed methods, indexes, autoindexing, CGI behavior, uploads, redirects, and request-size limits.
 
-Responsible for:
+### HTTP request parsing
 
-- socket creation
-- listening for incoming connections
-- client management
-- event polling
-- request dispatching
+Incoming bytes are converted into a structured request containing the method, target, HTTP version, headers, body, connection state, and upload data. Invalid request lines, headers, methods, versions, or body sizes are rejected with an appropriate error response.
 
-### Configuration Parser
+### Routing and response generation
 
-Responsible for:
+The router chooses the best matching location, resolves the requested filesystem path, checks permissions and allowed methods, and dispatches the request to static-file handling, directory handling, upload handling, deletion, redirection, or CGI execution. The response builder then creates a complete HTTP response with status line, headers, content length, and body.
 
-- parsing the configuration file
-- validating directives
-- building the server configuration
+### CGI execution
 
-### HTTP Request
+CGI requests are executed through child processes and pipes. The server prepares the CGI environment, writes the request body to the child process, reads the generated output, and converts it into an HTTP response while continuing to monitor the related descriptors through the event loop.
 
-Responsible for:
+## Project structure
 
-- parsing the request line
-- parsing headers
-- parsing the body
-- validating HTTP requests
-
-### HTTP Response
-
-Responsible for:
-
-- generating HTTP responses
-- serving static resources
-- generating error pages
-- handling redirections
-
-### CGI
-
-Responsible for:
-
-- executing CGI scripts
-- preparing environment variables
-- reading CGI output
-- forwarding CGI responses to the client
-
----
-
-# Instructions
+```text
+.
+├── main.cpp                    # Entry point and server startup
+├── event_loop/                 # poll()-based connection and event management
+├── parse_config/               # Configuration tokenization and parsing
+├── parse_request/              # HTTP request parsing and validation
+├── build_response/             # HTTP response and error-page generation
+├── route/                      # Request routing and resource dispatch
+├── uploadCgi/                  # Upload handling and CGI execution
+├── conf_file_example/          # Example configuration files
+├── nginx.conf                  # Default configuration used by the executable
+└── Makefile                    # C++98 build rules
+```
 
 ## Requirements
 
-The project requires:
-
-- macOS
-- A C++98 compatible compiler (`g++`)
+- A POSIX-compatible environment such as Linux or macOS
+- A C++ compiler with C++98 support
 - GNU Make
+- `curl` for basic manual testing
+- Python or another CGI runtime if CGI scripts are used
 
-Optional dependencies:
-
-- Python 3 (Python CGI)
-- PHP-CGI (PHP CGI)
-- curl (testing)
-
-## Compilation
-
-Compile the project:
+## Build
 
 ```bash
 make
 ```
 
-Clean object files:
+Other useful targets:
 
 ```bash
-make clean
+make clean    # Remove object files
+make fclean   # Remove object files and the executable
+make re       # Rebuild from scratch
+make ac       # Build, then remove object files
 ```
 
-Remove all generated files:
+## Run the server
 
-```bash
-make fclean
-```
-
-Rebuild everything:
-
-```bash
-make re
-```
-
----
-
-# Usage
-
-Launch the server with a configuration file:
-
-```bash
-./webserv nginx.conf
-```
-
-or simply
+Run with the default `nginx.conf` configuration:
 
 ```bash
 ./webserv
 ```
 
-Then open:
-
-```
-http://localhost:8080
-```
-
-Example request:
+Or provide another configuration file:
 
 ```bash
-curl http://localhost:8080
+./webserv path/to/config.conf
 ```
 
----
+With the default configuration, the server listens on port `8080`:
 
-# Example Configuration
+```bash
+curl -i http://localhost:8080/
+```
 
-```conf
-server 
+You can also open `http://localhost:8080` in a browser.
+
+## Configuration example
+
+```nginx
+server
 {
     listen 8080;
-    # error_page 404 /Users/kaneddam/Desktop/webserv/main.cpp;
-    index WebServ_ressources.txt;
-    # client_max_body_size 11;
-
-    root /Users/kaneddam/Desktop;
+    root /path/to/webserv;
 
     location /
     {
-        # allowed_method GET;
         autoindex on;
-        # cgi_pass /usr/local/bin/python3;
-        cgi_pass /bin/sh;
+        allowed_method GET POST;
+        # cgi_pass /usr/bin/python3;
         # cgi_extension .py;
-        cgi_extension .sh;
-        upload_store /Users/kaneddam/Desktop/uploadDire/;
-
+        # upload_store /path/to/uploads;
     }
-
 }
-
 ```
 
----
+The repository also contains `conf_file_example/test.conf` as an additional configuration reference. Paths are environment-specific and should be updated before running the server.
 
-# Supported HTTP Methods
+Common configuration concepts include:
 
-- GET
-- POST
-- DELETE
+| Directive | Purpose |
+| --- | --- |
+| `listen` | Select the port on which a server listens. |
+| `root` | Set the filesystem root for requested resources. |
+| `location` | Define routing and behavior for a URL prefix. |
+| `allowed_method` | Restrict the HTTP methods accepted by a location. |
+| `autoindex` | Enable directory listings. |
+| `index` | Define the default file used for a directory request. |
+| `cgi_pass` / `cgi_extension` | Enable CGI execution for matching files. |
+| `upload_store` | Select where uploaded files are stored. |
 
----
+## HTTP behavior
 
-# Supported Status Codes
+### Methods
 
-- 200 OK
-- 201 Created
-- 204 No Content
-- 301 Moved Permanently
-- 400 Bad Request
-- 403 Forbidden
-- 404 Not Found
-- 405 Method Not Allowed
-- 413 Payload Too Large
-- 500 Internal Server Error
+- `GET` — retrieve files, directories, generated listings, or CGI output.
+- `POST` — submit request bodies, upload files, or invoke CGI programs.
+- `DELETE` — remove a resource when the configured path and permissions allow it.
 
----
+### Status codes handled
 
-# Testing
+The response layer includes common success, redirection, client-error, and server-error responses, including:
 
-Useful tools:
+`200 OK`, `201 Created`, `204 No Content`, `301 Moved Permanently`, `400 Bad Request`, `403 Forbidden`, `404 Not Found`, `405 Method Not Allowed`, `413 Payload Too Large`, and `500 Internal Server Error`.
+
+## Testing ideas
+
+Use `curl` to exercise the main server paths:
 
 ```bash
-curl
+curl -i http://localhost:8080/
+curl -i -X POST -d 'hello=webserv' http://localhost:8080/
+curl -i -X DELETE http://localhost:8080/file.txt
+curl -i http://localhost:8080/nonexistent
 ```
 
-```bash
-nc
-```
+For lower-level and load-oriented checks, tools such as `nc`, `telnet`, `ab`, or `siege` can be useful. Test both valid and malformed requests, unsupported methods, missing resources, directory access, body-size limits, uploads, and CGI scripts.
 
-```bash
-telnet
-```
+## What I learned
 
-```bash
-ab
-```
+- How TCP listening sockets, client sockets, file descriptors, and non-blocking I/O work together.
+- How an event loop with `poll()` can coordinate many clients and CGI pipes without blocking the whole server.
+- How an HTTP/1.1 message is structured and why request-line, header, body, and connection rules must be validated separately.
+- How URL paths are mapped safely to filesystem resources and then dispatched according to the selected location.
+- How status codes and response headers communicate the result of a request to a client.
+- How CGI processes communicate with a server through environment variables, pipes, and process management.
+- How configuration parsing turns a text file into validated runtime behavior.
+- How to test a network service from both a browser and command-line clients.
 
-```bash
-siege
-```
+### My contribution
 
----
+My main contribution to this project was the HTTP message layer:
 
-# Technologies
+- **Parsing HTTP requests:** extracting and validating the request line, headers, body, HTTP version, method, and request state.
+- **Building HTTP responses:** generating status lines, headers, content length, response bodies, redirections, and error responses for the different request outcomes.
 
-- C++98
-- POSIX
-- BSD Sockets API
-- poll()
-- HTTP/1.1
-- CGI
+## Resources
 
----
+- [RFC 7230 — HTTP/1.1 Message Syntax and Routing](https://www.rfc-editor.org/rfc/rfc7230)
+- [RFC 7231 — HTTP/1.1 Semantics and Content](https://www.rfc-editor.org/rfc/rfc7231)
+- [RFC 3875 — The Common Gateway Interface (CGI)](https://www.rfc-editor.org/rfc/rfc3875)
+- [MDN — HTTP Overview](https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview)
+- [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
+- [C++ reference](https://en.cppreference.com/w/cpp)
+- [NGINX documentation](https://nginx.org/en/docs/)
 
-# Resources
+## Authors
 
-### HTTP
+- **Salma Fartah**
+- **Yasmine Chedmi**
+- **Khadija Neddam**
 
-- RFC 7230 – HTTP/1.1 Message Syntax and Routing
-- RFC 7231 – HTTP/1.1 Semantics and Content
-- MDN HTTP Documentation
-
-### CGI
-
-- RFC 3875
-- CGI Specification
-
-### Socket Programming
-
-- Beej's Guide to Network Programming
-
-### Reference
-
-- NGINX Documentation
-- cppreference.com
-
----
-
-# AI Usage
-
-Artificial Intelligence  was used exclusively as a learning and documentation assistant.
-
-It was used to:
-
-- clarify HTTP concepts and RFC specifications;
-- improve the structure and wording of the documentation;
-- suggest test scenarios using `curl`;
-- provide ideas for stress testing and CGI validation.
-
-All project architecture, implementation, algorithms and source code were designed and written by the project authors.
-
----
-
-# Authors
-
-- **sfartah**
-- **ychedmi**
-- **kaneddam**
-
-42 School
+42 School project.
