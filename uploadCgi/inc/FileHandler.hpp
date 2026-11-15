@@ -16,14 +16,13 @@
 
 class FileHandler
 {
-public:
-    bool error;
-    
-    FileHandler();
-    
-    std::string handleUpload(ReqContent& request, serverConf& server, locationConf& loc, bool keepAlive);
-    
-    bool isUploadDirValid(const std::string& uploadDir);
-    std::string generateFilename();
+    public:
+        bool error;
+        FileHandler();
+        
+        std::string handleUpload(ReqContent& request, serverConf& server, locationConf& loc, bool keepAlive, HttpResponse &responseBuilder);
+        
+        bool isUploadDirValid(const std::string& uploadDir);
+        std::string generateFilename();
 
 };

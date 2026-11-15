@@ -10,12 +10,13 @@ class RouteResp
         size_t      winnerIdx;
         std::string finalPath;
         std::string response;
-        HttpResponse respObj;
         FileHandler  upload;
     public:
+        HttpResponse respObj;
         CGIHandler   Cgi;
         bool         isCGI;
         RouteResp();
+        void passCookie(const std::string& cookieRes);
         ~RouteResp();
         int locationMatcha(serverConf *conf, ReqContent& cont, int code);
         int routeCheck(serverConf *conf, ReqContent& cont, int code, CGIResult& res);

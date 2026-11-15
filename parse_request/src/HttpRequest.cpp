@@ -348,11 +348,46 @@ bool HttpRequest::parse_body(size_t bodyStart, std::string request)
 		return false;
 	if (!boundary.empty() && !handle_multipart())
 		return errorCode = 400, false;
-	
+
 	return true;
 }
 
-std::string HttpRequest::parse_request(std::string request, serverConf *conf)
+std::string HttpRequest::generate_cookie(std::set<std::string>& session)
+{
+	std::stringstream cookieTmp;
+	std::string randVal;
+ 
+	std::string value = "!#$%&'()*+-./0123456789:<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ`[]^_abcdefghijklmnopqrstuvwxyz{|}~";
+
+	for (size_t i = 0; i < value.size(); i++)
+	{
+		int rand = std::rand() % value.size();
+		randVal += value[rand];
+	}
+	session.insert(randVal);
+	cookieTmp << "Set-Cookie: " << "sid=" << randVal << "; Path=/" << "; Max-Age=3600" << "; HttpOnly";
+	return cookieTmp.str();
+}
+
+std::string HttpRequest::parse_cookie(std::set<std::string>& session)
+{
+	/*init cookieResp*/
+	cookieResp = "cookieExist";
+	
+	std::string headerVal = req.headers["cookie"];
+	size_t sessionPos = headerVal.find("sid="); // i should skip + 4 pos;
+	if (sessionPos == std::string::npos) // didnt find sid
+		return generate_cookie(session);
+	std::string cookieVal = headerVal.substr(sessionPos + 4);
+
+	if (headerVal.find_first_of(";", sessionPos) != std::string::npos) // overwrite if ; found
+		cookieVal = headerVal.substr(sessionPos + 4, headerVal.find_first_of(";", sessionPos));
+	if (!session.count(cookieVal))
+		cookieResp = generate_cookie(session);
+	return cookieResp;
+}
+
+std::string HttpRequest::parse_request(std::string request, serverConf *conf, std::set<std::string>& sessions)
 {
 	if (parseState == INHEADER)
 		request = request.substr(current_pos);
@@ -387,6 +422,17 @@ std::string HttpRequest::parse_request(std::string request, serverConf *conf)
 	}
 	if (!parse_body(HeaderEnd + 4, request))
 		return resp.error_response(*conf, empty, errorCode);
+
+	// check if cookie true and parse cookie value
+	// call cookie object.parser and store value
+	if (req.headers.count("cookie"))
+		cookieResp = parse_cookie(sessions);
+	else
+		cookieResp = generate_cookie(sessions);
+	
+	route.passCookie(cookieResp);
+	
+	
 	if (route.routeCheck(conf, req, 0, CGIobj) == -1)
 		rtype = ERROR;
 
@@ -396,6 +442,7 @@ std::string HttpRequest::parse_request(std::string request, serverConf *conf)
 
 	return route.getResponse();
 }
+
 
 HttpRequest::HttpRequest()
 {

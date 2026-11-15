@@ -158,9 +158,9 @@ bool loopTools::existClient(struct pollfd& client, int clieIdx, size_t *idx)
 
 		infoClie[clieIdx].clieFile.append(buffer, reading);
 		// std::cout << "----------REQUEST FROM [" << client.fd << "]---------\n" << infoClie[clieIdx].clieFile << "\n---------------------\n";
-		infoClie[clieIdx].resp  = infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf);
+		infoClie[clieIdx].resp  = infoClie[clieIdx].request.parse_request(infoClie[clieIdx].clieFile, infoClie[clieIdx].cliConf, session);
 	}
-    else if (reading == 0) // connection closed cleanly by the client (TCP FIN)
+	else if (reading == 0) // connection closed cleanly by the client (TCP FIN)
 	{
 		// std::cout << "client: " << client.fd << " disconnected" << '\n';
 		if (infoClie[clieIdx].request.route.isCGI)
@@ -222,25 +222,23 @@ bool loopTools::CgiRead(CGIResult& cgiRd, size_t &i)
 		return false;
 	}
 	else if (reading > 0)
-	{
 		cgiRd.output.append(buffer, reading);
-		
-	}
 	else // read == 0
 	{
 		HttpRequest &requestCli = infoClie[xfd].request;
 		int childStatus;
 		waitpid(cgiRd.pidChild, &childStatus, 0);
+		
 		if (WIFEXITED(childStatus) && WEXITSTATUS(childStatus) == 0)
-			infoClie[xfd].resp = requestCli.route.Cgi.buildCGIResponse(cgiRd, requestCli.req.connection);
-    	else
+			infoClie[xfd].resp = requestCli.route.Cgi.buildCGIResponse(cgiRd, requestCli.req.connection, requestCli.route.respObj);
+			else
 		{
 			realResp.routeCheck(infoClie[xfd].cliConf, infoClie[xfd].request.req, 502, cgiRd);
 			infoClie[xfd].resp = realResp.getResponse();
 		}
 		close(vecFds[i].fd); // pollin fd one
 		if (cliIdx != -1)
-    		vecFds[cliIdx].events = POLLIN | POLLOUT;
+				vecFds[cliIdx].events = POLLIN | POLLOUT;
 		cgiMap.erase(vecFds[i].fd);
 		vecFds.erase(vecFds.begin() + i);
 		i--;
@@ -302,20 +300,20 @@ void loopTools::CgiTimout()
 
 void loopTools::shutdownCGI()
 {
-    std::map<int, CGIResult>::iterator it = cgiMap.begin();
-    while (it != cgiMap.end())
-    {
-        // process only once per client (avoid double kill)
-        if (it->first == it->second.stdoutPipe)
-        {
-            kill(it->second.pidChild, SIGKILL);
-            waitpid(it->second.pidChild, NULL, 0); // ok to block here, shutting down anyway
-            close(it->second.stdinPipe);
-            close(it->second.stdoutPipe);
-        }
-        ++it;
-    }
-    cgiMap.clear();
+		std::map<int, CGIResult>::iterator it = cgiMap.begin();
+		while (it != cgiMap.end())
+		{
+				// process only once per client (avoid double kill)
+				if (it->first == it->second.stdoutPipe)
+				{
+						kill(it->second.pidChild, SIGKILL);
+						waitpid(it->second.pidChild, NULL, 0); // ok to block here, shutting down anyway
+						close(it->second.stdinPipe);
+						close(it->second.stdoutPipe);
+				}
+				++it;
+		}
+		cgiMap.clear();
 }
 
 void loopTools::mainLoop()
@@ -323,8 +321,8 @@ void loopTools::mainLoop()
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGINT, signalHandler);
 	signal(SIGTERM, signalHandler);
-
-    while (sign)
+	srand(time(NULL));
+		while (sign)
 	{
 		int ready = poll(vecFds.data(), vecFds.size(), 1000);
 		if (ready < 0)
@@ -345,6 +343,7 @@ void loopTools::mainLoop()
 				newConnection(vecFds[i]);
 			else if (i >= serv_nb && cgiMap.count(vecFds[i].fd) && vecFds[i].revents & POLLOUT)
 			{
+
 				CGIResult data = cgiMap[vecFds[i].fd];
 				CgiWrite(data, i);
 			}
@@ -387,7 +386,7 @@ void loopTools::mainLoop()
 					continue;
 				if (infoClie[newidx].request.rtype == 3) // keep alive
 				{
-					infoClie[newidx].resp  = infoClie[newidx].request.parse_request(infoClie[newidx].clieFile, infoClie[newidx].cliConf);
+					infoClie[newidx].resp  = infoClie[newidx].request.parse_request(infoClie[newidx].clieFile, infoClie[newidx].cliConf, session);
 					isconnected = true;
 				}
 				else

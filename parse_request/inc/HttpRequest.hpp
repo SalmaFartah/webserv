@@ -27,6 +27,7 @@ class HttpRequest
 		size_t pos0, size;
 		size_t HeaderEnd;
 		size_t HeaderBegin;
+		std::string cookieResp;
 		bool isprintSTR(std::string);
 		void trim_WS(std::string& str);
 
@@ -52,7 +53,8 @@ class HttpRequest
 		ReqContent req;
 		int errorCode;
 		enum {INCOMPLETE, DONE, ERROR, KEEP_ALIVE} rtype;
-		std::string parse_request(std::string, serverConf *);
-
+		std::string parse_request(std::string, serverConf *, std::set<std::string>& sessions);
+		std::string parse_cookie(std::set<std::string>& session);
+		std::string generate_cookie(std::set<std::string>& session);
 		~HttpRequest();
 };
