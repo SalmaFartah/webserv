@@ -17,6 +17,7 @@ Webserv is designed to make the fundamentals of web-server engineering visible: 
 - Accept file uploads and store them in a configured directory.
 - Execute CGI programs for configured file extensions and forward their output to the client.
 - Preserve HTTP connection behavior such as `Connection: keep-alive`.
+- Create and validate cookie-based session identifiers.
 
 ## Main concepts
 
@@ -31,6 +32,7 @@ A configuration file is tokenized and parsed into server and location settings. 
 ### HTTP request parsing
 
 Incoming bytes are converted into a structured request containing the method, target, HTTP version, headers, body, connection state, and upload data. Invalid request lines, headers, methods, versions, or body sizes are rejected with an appropriate error response.
+Cookie headers are parsed to validate existing session identifiers or create a new one when needed.
 
 ### Routing and response generation
 
@@ -100,6 +102,30 @@ curl -i http://localhost:8080/
 ```
 
 You can also open `http://localhost:8080` in a browser.
+
+## Cookie Support
+
+Webserv supports cookie-based session identification. When a request does not
+include a valid `sid` cookie, the server generates a session identifier and
+returns it in a `Set-Cookie` response header:
+
+```http
+Set-Cookie: sid=<session-id>; Path=/; Max-Age=3600; HttpOnly
+```
+
+The session identifier is kept in memory while the server is running. Existing
+valid cookies are accepted without issuing a new one; missing or unknown
+identifiers receive a new cookie.
+
+Test the behavior with `curl`:
+
+```bash
+curl -i -c cookies.txt http://localhost:8080
+curl -i -b cookies.txt http://localhost:8080
+```
+
+The first request stores the cookie in `cookies.txt`, and the second sends it
+back to the server.
 
 ## Configuration example
 
