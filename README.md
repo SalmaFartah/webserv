@@ -4,8 +4,6 @@ A lightweight HTTP/1.1 web server built from scratch in **C++98** as part of the
 
 Webserv is designed to make the fundamentals of web-server engineering visible: socket management, HTTP message parsing, request routing, response generation, configuration handling, file serving, uploads, and CGI execution. It uses non-blocking sockets and an event-driven loop based on `poll()` to serve multiple clients without creating one thread per connection.
 
-> Developed by **Salma Fartah**, **Yasmine Chedmi**, and **Khadija Neddam**.
-
 ## What the project can do
 
 - Serve static files and directories over HTTP/1.1.
@@ -191,11 +189,5 @@ My main contribution to this project was the HTTP message layer:
 - [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
 - [C++ reference](https://en.cppreference.com/w/cpp)
 - [NGINX documentation](https://nginx.org/en/docs/)
-
-## Authors
-
-- **Salma Fartah**
-- **Yasmine Chedmi**
-- **Khadija Neddam**
 
 42 School project.
