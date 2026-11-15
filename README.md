@@ -26,8 +26,24 @@ The implementation supports configurable virtual servers through a configuration
 - Configurable locations
 - Client body size limitation
 - Persistent connections (Keep-Alive)
+- Session cookies using `sid` with cookie validation and expiration.
 
 ---
+
+## Cookie and session handling
+
+The server supports a lightweight session-cookie flow:
+
+- A request without a valid session cookie receives a generated `sid` cookie.
+- Incoming `Cookie` headers are parsed and the `sid` value is checked against the active session set.
+- Unknown or missing session IDs cause a new session cookie to be generated.
+- The response uses `Set-Cookie` with `Path=/`, `Max-Age=3600`, and `HttpOnly`.
+
+Example response header:
+
+```http
+Set-Cookie: sid=<session-id>; Path=/; Max-Age=3600; HttpOnly
+```
 
 # Architecture
 
